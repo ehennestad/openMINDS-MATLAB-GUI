@@ -37,9 +37,19 @@ classdef UICollection < openminds.Collection
 
     
     methods % Constructor
-        function obj = UICollection()
+        function obj = UICollection(propValues, options)
             %obj.metadata = containers.Map;
+            arguments
+                propValues.?openminds.Collection
+                options.Nodes = []
+            end
 
+            nvPairs = namedargs2cell(propValues);
+            obj = obj@openminds.Collection(nvPairs{:});
+
+            if ~isempty(options.Nodes)
+                obj.Nodes = options.Nodes;
+            end
             % Create a graph object
             obj.graph = digraph;
         end
@@ -441,13 +451,28 @@ classdef UICollection < openminds.Collection
                         instanceTable.(thisColumnName) = cat(1, rowValues{:});
                     else
                         if isa(thisValue, 'openminds.abstract.Schema')
+                            % Convert to string values
                             if ~metaSchema.isPropertyValueScalar(thisColumnName)
                                 rowValues = cell(numRows, 1);
                                 for jRow = 1:numRows
                                     thisValue =  instanceTable{jRow,i};
-                                    rowValues{jRow} = string(thisValue);
+                                    if isa(thisValue, 'cell')
+                                        thisValueStr = arrayfun(@(x) string(x), thisValue{1});
+                                    else
+                                        thisValueStr = string(thisValue);
+                                    end
+                                    if isempty(thisValueStr)
+                                        thisValueStr = "";
+                                    elseif numel(thisValueStr) > 1
+                                        thisValueStr = join(thisValueStr, '; ');
+                                    end
+                                    rowValues{jRow} = thisValueStr;
                                 end
+                                try
                                 instanceTable.(thisColumnName) = cat(1, rowValues{:});
+                                catch
+                                    keyboard
+                                end
                             end
                         end
                     end
@@ -484,6 +509,8 @@ classdef UICollection < openminds.Collection
                 shortSchemaName = fullSchemaName;
             end
         end
+    
+    
     end
 
 end
