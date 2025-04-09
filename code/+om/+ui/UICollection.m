@@ -47,14 +47,15 @@ classdef UICollection < openminds.Collection
             nvPairs = namedargs2cell(propValues);
             obj = obj@openminds.Collection(nvPairs{:});
 
+            % Create a graph object
+            obj.graph = digraph;
+            
+            % If Nodes are provided, assign them and build the graph
             if ~isempty(options.Nodes)
                 obj.Nodes = options.Nodes;
             end
-            % Create a graph object
-            obj.graph = digraph;
         end
     end
-
 
     % Override Collection methods
     
@@ -77,25 +78,26 @@ classdef UICollection < openminds.Collection
                 obj.notify('CollectionChanged', evtData)
             end
         end
+    
+        function onNodesSet(obj)
+            obj.buildGraphFromNodes();
+        end
     end
 
     methods
 
         function addDeprecated(obj, metadataInstance)
+            % This method is kept for backward compatibility
+            % It now uses the add method from the superclass to add instances
+            % to the Nodes dictionary and then updates the graph
             
             import om.ui.uicollection.event.CollectionChangedEventData
 
-            instanceClass = class(metadataInstance);
-            instanceName = obj.getSchemaShortName(instanceClass);
+            % Add the instance to the collection using the superclass method
+            obj.add(metadataInstance);
             
-            if isKey(obj.metadata, instanceName)
-                obj.metadata(instanceName) = [obj.metadata(instanceName), metadataInstance];
-            else
-                obj.metadata(instanceName) = metadataInstance;
-            end
-
+            % Update the graph with the new instance(s)
             for i = 1:numel(metadataInstance)
-                
                 thisInstance = metadataInstance(i);
                 
                 if ~isempty(obj.graph.Nodes)
@@ -110,7 +112,6 @@ classdef UICollection < openminds.Collection
                 end
 
                 % Don't loop through controlled terms properties
-
                 if isa(thisInstance, 'openminds.controlledterms.ControlledTerm')
                     continue
                 end
@@ -118,19 +119,62 @@ classdef UICollection < openminds.Collection
                 obj.addInstanceProperties(thisInstance)
             end
 
+            % Notify that the collection has changed
             evtData = CollectionChangedEventData('INSTANCE_ADDED', metadataInstance);
             obj.notify('CollectionChanged', evtData)
         end
 
         function removeDeprecated(obj, metadataName)
-            obj.metadata.remove(metadataName);
-            obj.graph = rmnode(obj.graph, metadataName);
+            % This method is kept for backward compatibility
+            % It now uses the remove method from the superclass
+            
+            % Get all instances of the specified type
+            try
+                instanceType = openminds.enum.Types(metadataName);
+                instances = obj.list(instanceType);
+                
+                % Remove each instance from the collection
+                for i = 1:numel(instances)
+                    obj.remove(instances(i));
+                    
+                    % Remove the node from the graph
+                    if ~isempty(obj.graph.Nodes)
+                        foundNode = findnode(obj.graph, instances(i).id);
+                        if foundNode > 0
+                            obj.graph = rmnode(obj.graph, instances(i).id);
+                        end
+                    end
+                end
+            catch ME
+                warning('Failed to remove instances of type %s: %s', metadataName, ME.message);
+            end
         end
 
         function removeInstance(obj, type, index)
-            instancesOfType = obj.metadata(type);
-            instancesOfType(index)=[];
-            obj.metadata(type) = instancesOfType;
+            % Get all instances of the specified type
+            try
+                instanceType = openminds.enum.Types(type);
+                instances = obj.list(instanceType);
+                
+                % Check if index is valid
+                if index > numel(instances)
+                    error('Index exceeds the number of instances of type %s', type);
+                end
+                
+                % Remove the instance at the specified index
+                instanceToRemove = instances(index);
+                obj.remove(instanceToRemove);
+                
+                % Remove the node from the graph
+                if ~isempty(obj.graph.Nodes)
+                    foundNode = findnode(obj.graph, instanceToRemove.id);
+                    if foundNode > 0
+                        obj.graph = rmnode(obj.graph, instanceToRemove.id);
+                    end
+                end
+            catch ME
+                warning('Failed to remove instance of type %s at index %d: %s', type, index, ME.message);
+            end
         end
 
         function modifyInstance(obj, instanceId, propName, propValue)
@@ -219,25 +263,83 @@ classdef UICollection < openminds.Collection
 
         function autoAssignLabels(obj, schemaName)
             % Update labels if they are empty...
-            if isKey(obj.metadata, schemaName)
-                labels = obj.getSchemaInstanceLabels(schemaName);
-                instances = obj.SchemaInstances(schemaName);
-                if isprop(instances, 'lookupLabel')
-                    for i = 1:numel(instances)
-                        if isempty(instances(i).lookupLabel) || strlength(instances(i).lookupLabel)==0
-                            instances(i).lookupLabel = labels{i};
+            try
+                instanceType = openminds.enum.Types(schemaName);
+                instances = obj.list(instanceType);
+                
+                if ~isempty(instances)
+                    labels = obj.getSchemaInstanceLabels(schemaName);
+                    
+                    if isprop(instances, 'lookupLabel')
+                        for i = 1:numel(instances)
+                            if isempty(instances(i).lookupLabel) || strlength(instances(i).lookupLabel)==0
+                                instances(i).lookupLabel = labels{i};
+                            end
                         end
                     end
                 end
+            catch ME
+                warning('Failed to auto-assign labels for type %s: %s', schemaName, ME.message);
             end
         end
 
     end
 
-    methods (Access = private)
-
-        function addInstanceProperties(obj, thisInstance)
-
+    methods (Access = public)
+        function buildGraphFromNodes(obj)
+            % buildGraphFromNodes Builds the graph representation from the Nodes dictionary
+            %
+            % This method iterates through all instances in the Nodes dictionary,
+            % adds each instance as a node in the graph, creates listeners for each
+            % instance, and adds edges between instances based on their relationships.
+            %
+            % Usage:
+            %   obj.buildGraphFromNodes()
+            
+            % Reset the graph
+            obj.graph = digraph;
+            
+            % Get all instance IDs from the Nodes dictionary
+            instanceIds = obj.Nodes.keys();
+            
+            % First pass: Add all instances as nodes in the graph
+            for i = 1:numel(instanceIds)
+                instanceId = instanceIds{i};
+                instance = obj.get(instanceId);
+                
+                % Add the node to the graph
+                obj.graph = addnode(obj.graph, instanceId);
+                
+                % Create listeners for the instance (skip controlled terms)
+                if ~isa(instance, 'openminds.controlledterms.ControlledTerm')
+                    obj.createInstanceListeners(instance);
+                end
+            end
+            
+            % Second pass: Add edges between instances based on their relationships
+            for i = 1:numel(instanceIds)
+                instanceId = instanceIds{i};
+                instance = obj.get(instanceId);
+                
+                % Skip controlled terms for edge creation
+                if isa(instance, 'openminds.controlledterms.ControlledTerm')
+                    continue;
+                end
+                
+                % Process the instance's properties to find linked instances
+                obj.addEdgesForInstance(instance);
+            end
+            
+            fprintf('Graph built with %d nodes and %d edges\n', ...
+                numnodes(obj.graph), numedges(obj.graph));
+        end
+        
+        function addEdgesForInstance(obj, thisInstance)
+            % addEdgesForInstance Adds edges to the graph for a given instance
+            % This method examines the properties of an instance and adds edges
+            % to the graph for any linked instances that are already in the collection.
+            % Unlike addInstanceProperties, this method does not add instances to the collection.
+            
             % Search through public properties of the metadata instance
             % for linked properties
             propertyNames = properties(thisInstance);
@@ -250,19 +352,83 @@ classdef UICollection < openminds.Collection
                 if isa(propValue, 'openminds.abstract.Schema')
                     
                     if ~iscell(propValue)
-                        % Recursively add the new type to the metadata property and the new node to the graph
+                        % Add edges for array of instances
                         for k = 1:length(propValue)
+                            % Check if the linked instance is in the collection
+                            if isKey(obj.Nodes, propValue(k).id)
+                                % Add an edge to the graph representing the relationship
+                                obj.graph = addedge(obj.graph, thisInstance.id, propValue(k).id);
+                            end
+                        end
+                    else
+                        % Add edges for cell array of instances
+                        for k = 1:length(propValue)
+                            % Check if the linked instance is in the collection
+                            if isKey(obj.Nodes, propValue{k}.id)
+                                % Add an edge to the graph representing the relationship
+                                obj.graph = addedge(obj.graph, thisInstance.id, propValue{k}.id);
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    methods (Access = private)
+
+        function addInstanceProperties(obj, thisInstance)
+            % Search through public properties of the metadata instance
+            % for linked properties and add them to the graph
+            propertyNames = properties(thisInstance);
+
+            for j = 1:length(propertyNames)
+                propValue = thisInstance.(propertyNames{j});
+                
+                if isempty(propValue); continue; end
+
+                if isa(propValue, 'openminds.abstract.Schema')
+                    
+                    if ~iscell(propValue)
+                        % Recursively add the new type to the collection and the new node to the graph
+                        for k = 1:length(propValue)
+                            % Add the instance to the collection
                             obj.add(propValue(k));
 
-                            % Add the new node to the graph and an edge to the instance it is a property value of
+                            % Add the node to the graph if it doesn't exist
+                            if ~isempty(obj.graph.Nodes)
+                                foundNode = findnode(obj.graph, propValue(k).id);
+                            else
+                                foundNode = 0;
+                            end
+
+                            if foundNode == 0
+                                obj.graph = addnode(obj.graph, propValue(k).id);
+                                obj.createInstanceListeners(propValue(k));
+                            end
+
+                            % Add an edge to the graph representing the relationship
                             obj.graph = addedge(obj.graph, thisInstance.id, propValue(k).id);
                         end
                     else
-                        % Recursively add the new type to the metadata property and the new node to the graph
+                        % Recursively add the new type to the collection and the new node to the graph
                         for k = 1:length(propValue)
+                            % Add the instance to the collection
                             obj.add(propValue{k});
 
-                            % Add the new node to the graph and an edge to the instance it is a property value of
+                            % Add the node to the graph if it doesn't exist
+                            if ~isempty(obj.graph.Nodes)
+                                foundNode = findnode(obj.graph, propValue{k}.id);
+                            else
+                                foundNode = 0;
+                            end
+
+                            if foundNode == 0
+                                obj.graph = addnode(obj.graph, propValue{k}.id);
+                                obj.createInstanceListeners(propValue{k});
+                            end
+
+                            % Add an edge to the graph representing the relationship
                             obj.graph = addedge(obj.graph, thisInstance.id, propValue{k}.id);
                         end
                     end
@@ -300,22 +466,31 @@ classdef UICollection < openminds.Collection
         function [metaTable, instanceIDs] = getTable(obj, schemaName)
             
             instanceIDs = {};
-            schemaInstanceList = obj.list(schemaName);
+
+            schemaName = openminds.internal.vocab.getSchemaName(schemaName);
+            
+            % Get instances of the specified type using the list method
+            try
+                instanceType = openminds.enum.Types(schemaName);
+                schemaInstanceList = obj.list(instanceType);
+            catch
+                % Try using the string directly if conversion to enum fails
+                schemaInstanceList = obj.list(schemaName);
+            end
 
             if ~isempty(schemaInstanceList)
-                %schemaInstanceList = obj.metadata(schemaName);
-                
+                % Get instance IDs
                 instanceIDs = {schemaInstanceList.id};
+                
+                % Convert instances to a table
                 instanceTable = schemaInstanceList.toTable();
                 instanceTable.id = instanceIDs';
+                
+                % Replace linked instances with categoricals
                 instanceTable = obj.replaceLinkedInstancesWithCategoricals(instanceTable, schemaName);
 
+                % Create a MetaTable from the instance table
                 metaTable = nansen.metadata.MetaTable(instanceTable, 'MetaTableClass', class(schemaInstanceList));
-                % metaTable = Catalog(instanceTable, 'NameField', 'lookupLabel', 'ItemClass', class(schemaInstanceList));
-                % metaTable.ItemRepresentation = 'object';
-                % metaTable.ItemConstructorInputType = 'nvpairs';
-                % 
-                % metaTable.columnProperties = om.ui.initializeColumnAttributes(metaTable);
             else
                 metaTable = [];
             end
@@ -336,23 +511,47 @@ classdef UICollection < openminds.Collection
             instanceLinkee = schemaNames{1};
             instanceLinked = schemaNames{2};
 
+            % Get tables for both schema types
             tableLinker = obj.getTable(instanceLinkee).entries;
-            tableLinker.id = {obj.metadata(instanceLinked).id}';
             tableLinked = obj.getTable(instanceLinked).entries;
-
-            tableLinked.id = {obj.metadata(instanceLinked).id}';
             
-            tableLinker = renamevars(tableLinker, 'lookupLabel', 'lookupLabel_Subject');
-            tableLinked = renamevars(tableLinked, 'lookupLabel', 'lookupLabel_SubjectState');
+            % Get instances of both types
+            instanceTypeLinkee = openminds.enum.Types(instanceLinkee);
+            instanceTypeLinked = openminds.enum.Types(instanceLinked);
+            instancesLinkee = obj.list(instanceTypeLinkee);
+            instancesLinked = obj.list(instanceTypeLinked);
+            
+            % Add IDs to tables
+            if ~isempty(instancesLinkee)
+                tableLinker.id = {instancesLinkee.id}';
+            end
+            
+            if ~isempty(instancesLinked)
+                tableLinked.id = {instancesLinked.id}';
+            end
+            
+            % Rename lookupLabel columns to avoid conflicts
+            if ismember('lookupLabel', tableLinker.Properties.VariableNames)
+                tableLinker = renamevars(tableLinker, 'lookupLabel', ['lookupLabel_', instanceLinkee]);
+            end
+            
+            if ismember('lookupLabel', tableLinked.Properties.VariableNames)
+                tableLinked = renamevars(tableLinked, 'lookupLabel', ['lookupLabel_', instanceLinked]);
+            end
 
+            % Get keys for joining
             [leftKey, ~] = obj.getKeyPairsForJoin(instanceLinkee, instanceLinked);
-            leftKey = 'id';
+            leftKey = 'id';  % Using ID as the key for now
             rightKey = 'id';
 
+            % Perform the join
             joinFcn = str2func(options.JoinMethod);
-
             joinedTable = joinFcn(tableLinker, tableLinked, 'LeftKeys', leftKey, 'RightKeys', rightKey);
-            joinedTable.id = []; % Remove the id column
+            
+            % Remove the id column
+            if ismember('id', joinedTable.Properties.VariableNames)
+                joinedTable.id = [];
+            end
 
             joinedClassName = sprintf('%s * %s', instanceLinkee, instanceLinked);
             
@@ -509,8 +708,13 @@ classdef UICollection < openminds.Collection
                 shortSchemaName = fullSchemaName;
             end
         end
-    
-    
-    end
 
+        function obj = fromCollection(collection)
+            obj = om.ui.UICollection(...
+                'Name', collection.Name, ...
+                'Description', collection.Description);
+            obj.Nodes = collection.Nodes;
+            obj.TypeMap = collection.TypeMap;
+        end
+    end
 end
