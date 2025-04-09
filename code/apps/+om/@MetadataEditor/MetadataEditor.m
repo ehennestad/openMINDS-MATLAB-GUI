@@ -3,6 +3,7 @@ classdef MetadataEditor < handle
 %   TODO:
 %       [x] Save figure size to app settings
 %       [x] Save metadata set
+%       [ ] Sidebar should be populated with collection types, or top 10 collection types....?
 %       [ ] Fill out all linked types which are not controlled terms with
 %           categoricals where each value is a id/label for one of the linked
 %           types...
@@ -125,7 +126,7 @@ classdef MetadataEditor < handle
             obj.changeSelection('DatasetVersion')
                        
             obj.configureFigureInteractionCallbacks()
-
+            
             if ~nargout
                 clear obj
             end
@@ -324,12 +325,19 @@ classdef MetadataEditor < handle
                 mSubItem = uimenu(mItem, "Text", L(i).name);
                 mSubItem.Callback = @obj.onProjectTypeSelected;
             end
+                       
+            mItem = uimenu(m, 'Text', 'Select graph plot layout');
+            layoutOptions = ["circle", "force", "layered", "subspace", "force3", "subspace3"];
+            for i = 1:numel(layoutOptions)
+                mSubItem = uimenu(mItem, "Text", layoutOptions(i));
+                mSubItem.Callback = @obj.onGraphLayoutChanged;
+            end
 
             % Create a separator
             m = uimenu(obj.Figure, 'Text', '|', 'Enable', 'off');
 
             % Todo: Get model version from preferences...
-            modelRoot = fullfile(openminds.internal.rootpath, 'schemas', 'latest', '+openminds');
+            modelRoot = fullfile(openminds.internal.rootpath, 'types', 'latest', '+openminds');
             ignoreList = {'+controlledterms'};
             
             omModels = recursiveDir(modelRoot, "Type", "folder", "IgnoreList", ignoreList, ...
@@ -543,7 +551,7 @@ classdef MetadataEditor < handle
             end
             ignoreList = {'+controlledterms'};
 
-            modelRoot = fullfile(openminds.internal.rootpath, 'schemas', 'latest', '+openminds');
+            modelRoot = fullfile(openminds.internal.rootpath, 'types', 'latest', '+openminds');
             omModels = recursiveDir(modelRoot, "Type", "folder", ...
                 "Expression", expression, ...
                 "IgnoreList", ignoreList, ...
@@ -554,6 +562,12 @@ classdef MetadataEditor < handle
             obj.SchemaMenu = om.SchemaMenu(obj, omModels, true);
             obj.SchemaMenu.MenuSelectedFcn = @obj.onSchemaMenuItemSelected;
         end
+
+        function onGraphLayoutChanged(obj, src, evt)
+
+            obj.UIGraphViewer.Layout = src.Text;
+        end
+
 
         function onSchemaMenuItemSelected(obj, functionName, selectionMode)
         % onSchemaMenuItemSelected - Instance menu selection callback
