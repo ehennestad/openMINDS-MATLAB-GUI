@@ -98,13 +98,16 @@ classdef MetadataEditor < handle
             obj.createSchemaSelectorSidebar(typeSelections)
             obj.plotOpenMindsLogo()
 
-            % % Create graph of the core module of openMINDS
-            [G,e] = om.internal.graph.generateGraph('core');
-            
             hAxes = axes(obj.UIContainer.UITab(2));
             hAxes.Position = [0,0,0.999,1];
 
-            G = obj.MetadataCollection.graph;
+            if false %obj.showMetadataModuleGraph
+                % % Create graph of the core module of openMINDS
+                [G,e] = om.internal.graph.generateGraph('core');
+            else
+                G = obj.MetadataCollection.graph;
+                e = "not implemented";
+            end
             obj.addMetadataCollectionListeners()
 
             h = om.internal.graphics.InteractiveOpenMINDSPlot(G, hAxes, e);
@@ -564,10 +567,10 @@ classdef MetadataEditor < handle
         end
 
         function onGraphLayoutChanged(obj, src, evt)
-
+            set([src.Parent.Children], 'Checked', 'off')
+            src.Checked = 'on';
             obj.UIGraphViewer.Layout = src.Text;
         end
-
 
         function onSchemaMenuItemSelected(obj, functionName, selectionMode)
         % onSchemaMenuItemSelected - Instance menu selection callback

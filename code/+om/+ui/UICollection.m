@@ -53,6 +53,7 @@ classdef UICollection < openminds.Collection
             % If Nodes are provided, assign them and build the graph
             if ~isempty(options.Nodes)
                 obj.Nodes = options.Nodes;
+                obj.buildGraphFromNodes()
             end
         end
     end
@@ -306,9 +307,19 @@ classdef UICollection < openminds.Collection
             for i = 1:numel(instanceIds)
                 instanceId = instanceIds{i};
                 instance = obj.get(instanceId);
+
+                %instanceName = sprintf('%s (%s)', string(instance), openminds.internal.utility.getSchemaShortName(class(instance)));
                 
+                nodeProps = table(string(instanceId), string(instance), string(openminds.internal.utility.getSchemaShortName(class(instance))), ...
+                    'VariableNames', {'Name' 'Label', 'Type'});
+
                 % Add the node to the graph
-                obj.graph = addnode(obj.graph, instanceId);
+                try
+                    obj.graph = addnode(obj.graph, nodeProps);
+                catch ME
+                    warning(ME.message)
+                    obj.graph = addnode(obj.graph, instanceId);
+                end
                 
                 % Create listeners for the instance (skip controlled terms)
                 if ~isa(instance, 'openminds.controlledterms.ControlledTerm')
@@ -368,6 +379,15 @@ classdef UICollection < openminds.Collection
                                 % Add an edge to the graph representing the relationship
                                 obj.graph = addedge(obj.graph, thisInstance.id, propValue{k}.id);
                             end
+                        end
+                    end
+                elseif openminds.utility.isMixedInstance(propValue)
+                    % Add edges for array of instances
+                    for k = 1:length(propValue)
+                        % Check if the linked instance is in the collection
+                        if isKey(obj.Nodes, propValue(k).Instance.id)
+                            % Add an edge to the graph representing the relationship
+                            obj.graph = addedge(obj.graph, thisInstance.id, propValue(k).Instance.id);
                         end
                     end
                 end
@@ -600,21 +620,21 @@ classdef UICollection < openminds.Collection
 
                 try
                     % Get the value of the first row
-                    thisValue = instanceTable{1,i};
+                    firstValue = instanceTable{1,i};
                 
                     % If the table column contains rows where the number of 
                     % instances differ, need to extract instances from a cell
-                    if iscell(thisValue); thisValue = [thisValue{:}]; end
+                    if iscell(firstValue); firstValue = [firstValue{:}]; end
                 
                     % Get all the possible options.
-                    if isa(thisValue, 'openminds.abstract.ControlledTerm')
-                        options = eval(sprintf('%s.CONTROLLED_INSTANCES', class(thisValue)));
+                    if isa(firstValue, 'openminds.abstract.ControlledTerm')
+                        options = eval(sprintf('%s.CONTROLLED_INSTANCES', class(firstValue)));
                         options = ["<no selection>", options]; %#ok<AGROW>
 
-                    elseif isa(thisValue, 'openminds.abstract.Schema')
+                    elseif isa(firstValue, 'openminds.abstract.Schema')
                             
                         if metaSchema.isPropertyValueScalar(thisColumnName)
-                            className = string( openminds.enum.Types.fromClassName( class(thisValue) ) ); 
+                            className = string( openminds.enum.Types.fromClassName( class(firstValue) ) ); 
                             options = [sprintf("None (%s)", className),  obj.getSchemaInstanceLabels(className)];
                         else
                             options = [];
@@ -636,20 +656,29 @@ classdef UICollection < openminds.Collection
                             else
                                 try
                                     % Todo: This need to be improved!!!
-                                    thisValue = string( thisValue.getDisplayLabel() );
-                                    if ~any( strcmp( thisValue, options ) )
-                                        options(end+1) = thisValue; %#ok<AGROW>
+                                    thisValueStr = repmat("", 1, numel(thisValue));
+                                    for k = 1:numel(thisValue)
+                                        thisValueStr(k) = string( thisValue(k).getDisplayLabel() );
+                                        if ~any( strcmp( thisValueStr(k), options ) )
+                                            options(end+1) = thisValueStr; %#ok<AGROW>
+                                        end
                                     end
+                                    thisValue = thisValueStr;
                                 catch
                                     thisValue = options(1);
                                 end
                             end
-    
+                        end
+                        
+                        % Build categorical after all potential options are
+                        % collected
+                        for jRow = 1:numRows
                             rowValues{jRow} = categorical(thisValue, unique(options), 'Protected', true);
                         end
+
                         instanceTable.(thisColumnName) = cat(1, rowValues{:});
                     else
-                        if isa(thisValue, 'openminds.abstract.Schema')
+                        if isa(firstValue, 'openminds.abstract.Schema')
                             % Convert to string values
                             if ~metaSchema.isPropertyValueScalar(thisColumnName)
                                 rowValues = cell(numRows, 1);
@@ -668,7 +697,7 @@ classdef UICollection < openminds.Collection
                                     rowValues{jRow} = thisValueStr;
                                 end
                                 try
-                                instanceTable.(thisColumnName) = cat(1, rowValues{:});
+                                    instanceTable.(thisColumnName) = cat(1, rowValues{:});
                                 catch
                                     keyboard
                                 end
@@ -715,6 +744,7 @@ classdef UICollection < openminds.Collection
                 'Description', collection.Description);
             obj.Nodes = collection.Nodes;
             obj.TypeMap = collection.TypeMap;
+            obj.buildGraphFromNodes()
         end
     end
 end
