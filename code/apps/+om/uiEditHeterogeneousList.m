@@ -81,7 +81,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
         end
     end
 
-    uim.utility.centerFigure(editor.UIFigure)
+    uim.utility.centerFigureOnScreen(editor.UIFigure)
     
     uiwait(editor, true)
     
