@@ -11,6 +11,7 @@ classdef InteractiveOpenMINDSPlot < handle
          ColorMap = 'viridis'
          ShowNodeLabels
          ShowEdgeLabels
+         Layout (1,1) string = "auto"
     end
 
     properties (Access = protected) % data
@@ -50,19 +51,43 @@ classdef InteractiveOpenMINDSPlot < handle
             
             %obj.Axes.YDir = 'reverse';
         end 
-        
+    end
+
+    methods % Set/Get
+        function set.Layout(obj, newValue)
+            obj.Layout = newValue;
+            obj.onLayoutPropertySet()
+        end
+    end
+
+    methods
         function updateGraph(obj, graphObj)
-            obj.DirectedGraph = graphObj;
+            if nargin >= 2
+                obj.DirectedGraph = graphObj;
+            end
 
             delete( obj.GraphPlot )        
             hold(obj.Axes, 'off')
 
             %obj.GraphPlot = plot(obj.Axes, graphObj, 'Layout', 'force');
-            obj.GraphPlot = plot(obj.Axes, graphObj, 'Layout', 'auto');
+            obj.GraphPlot = plot(obj.Axes, obj.DirectedGraph, 'Layout', obj.Layout);
 
-            numNodes = graphObj.numnodes;
+            numNodes = obj.DirectedGraph.numnodes;
             colors = colormap(obj.ColorMap);
-            randIdx = randperm(256, numNodes);
+            
+            randIdx = round(randperm(numNodes, numNodes)/numNodes*256);
+    
+            nodeIds = obj.DirectedGraph.Nodes.Name;
+            isInstances = ~startsWith(nodeIds, 'https');
+            
+            uniqueInstanceTypes = unique(extractBefore(nodeIds(isInstances), "/"));
+            uniqueIdx = linspace(1,256,numel(uniqueInstanceTypes));
+
+            for i = 1:numel(uniqueInstanceTypes)
+                isThisInstanceType = startsWith(nodeIds, uniqueInstanceTypes{i});
+                randIdx(isThisInstanceType) = uniqueIdx(i);
+            end
+
             obj.GraphPlot.NodeColor = colors(randIdx, :);
             
             obj.GraphPlot.MarkerSize = 10;
@@ -80,14 +105,18 @@ classdef InteractiveOpenMINDSPlot < handle
             
             obj.NodeTransporter = GraphNodeTransporter(obj.Axes);
             obj.GraphPlot.ButtonDownFcn = @(s,e) obj.NodeTransporter.startDrag(s,e);
-
         end
 
         function keyPress(obj, src, event)
             wasCaptured = obj.PointerManager.onKeyPress([], event);
         end
-
-
     end
 
+    methods (Access = private)
+        function onLayoutPropertySet(obj)
+            if ~isempty(obj.GraphPlot)
+                obj.updateGraph();
+            end
+        end
+    end
 end
