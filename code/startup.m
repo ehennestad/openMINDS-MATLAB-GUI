@@ -1,1 +1,1 @@
-om.internal.setup.addDependenciesToPath()
+om.internal.startup.addDependenciesToPath()

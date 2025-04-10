@@ -3,18 +3,18 @@ function addDependenciesToPath()
     warnState = warning('off', 'MATLAB:javaclasspath:jarAlreadySpecified');
     warnCleanupObj = onCleanup(@() warning(warnState));
     
-    reqs = om.internal.setup.getRequirements();
+    reqs = om.internal.startup.getRequirements();
 
     for i = 1:numel(reqs)
         switch reqs(i).Type
             case 'GitHub'
                 % Todo.
                 %[repoUrl, branchName] = parseGitHubUrl(reqs(i).URI);
-                %om.internal.setup.installGithubRepository( repoUrl, branchName )
+                %om.internal.startup.installGithubRepository( repoUrl, branchName )
             
             case 'FileExchange'
-                [packageUuid, version] = om.internal.setup.fex.parseFileExchangeURI( reqs(i).URI );
-                [isInstalled, version] = om.internal.setup.fex.isToolboxInstalled(packageUuid, version);
+                [packageUuid, version] = om.internal.startup.fex.parseFileExchangeURI( reqs(i).URI );
+                [isInstalled, version] = om.internal.startup.fex.isToolboxInstalled(packageUuid, version);
                 if isInstalled
                     matlab.addons.enableAddon(packageUuid, version)
                 end
@@ -37,7 +37,7 @@ function addDependenciesToPath()
         end
 
         folderPath = fullfile(addonListing(i).folder, addonListing(i).name);
-        startupFile = om.internal.setup.findStartupFile(folderPath);
+        startupFile = om.internal.startup.findStartupFile(folderPath);
         
         if ~isempty(startupFile)
             run( startupFile )
