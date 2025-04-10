@@ -625,7 +625,17 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
 
                 if contains(comp.ActiveMetadataType.ClassName, '.controlledterms')
                     controlledInstances = eval(sprintf('%s.CONTROLLED_INSTANCES', comp.ActiveMetadataType.ClassName));
-                    itemsData = [itemsData, controlledInstances];
+                    % Get the value of the "name" property of the instances and 
+                    % add to items data.
+                    for i = 1:numel(controlledInstances);
+                        thisInstance = feval(comp.ActiveMetadataType.ClassName, controlledInstances(i));
+                        if ~any(strcmp(arrayfun(@(i) string(i), itemsData), string(thisInstance)))
+                            itemsData = [itemsData, thisInstance]; %#ok<AGROW>
+                        end
+                    end
+                    % Todo: Consider whether to show the camelcase version
+                    % of name instead?
+                    %itemsData = [itemsData, controlledInstances];
                 end
 
                 if ~isempty(itemsData)
