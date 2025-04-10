@@ -8,6 +8,8 @@ schemas
 #code/schemas_matlab/+openminds/+controlledterms/
 code/schemas_matlab/+openminds/+core/
 
+docs/reports/*
+
 # openMINDS logo
 light_openMINDS-logo.png
 openMINDS_logo_light.png

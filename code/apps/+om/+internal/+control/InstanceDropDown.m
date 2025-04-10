@@ -49,6 +49,7 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
 
     properties
         ShowCreateAction = true
+        MetadataTypeConstraints (1,:) om.internal.InstanceFilter
     end
 
     properties (Hidden)
@@ -64,6 +65,11 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
     properties (Constant, Access = private)
         DefaultActions = ["*Select a instance*", "*Create a new instance*", "*Download instances*"]
     end
+    properties (SetAccess = immutable, Hidden)
+        CustomActions (1,:) {mustBeA(CustomActions, 'om.internal.abstract.Action')} ...
+            = om.internal.control.action.SelectInstance.empty
+    end
+
 
     properties (SetAccess = private)
         MetadataType (1,1) string {om.internal.validator.mustBeTypeClassName} = missing
@@ -121,10 +127,13 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                 propValues.ShowCreateAction = true
                 propValues.MetadataCollection
                 propValues.MetadataType (1,1) string = missing
+                propValues.MetadataTypeConstraints (1,:) om.internal.InstanceFilter
                 propValues.ActiveMetadataType (1,1) openminds.enum.Types = "None"
                 propValues.UpstreamInstanceType (1,1) string = missing
                 propValues.UpstreamInstancePropertyName (1,1) string = missing
                 propValues.ActionButtonType (1,1) om.internal.control.enum.InstanceDropdownActionButton = "None"
+                propValues.CustomActions (1,:) {mustBeA(propValues.CustomActions, 'om.internal.abstract.Action')} = ...
+                    om.internal.control.action.SelectInstance.empty
                 propValues.RemoteMetadataCollection
             end
 
@@ -149,6 +158,23 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
             [propValues, propValuesUpstream] = popPropValues(propValues, ...
                 'UpstreamInstanceType', 'UpstreamInstancePropertyName');
             set(comp, propValuesUpstream)
+
+            if isfield(propValues, "MetadataTypeConstraints")
+                comp.MetadataTypeConstraints = propValues.MetadataTypeConstraints;
+                propValues = rmfield(propValues, "MetadataTypeConstraints");
+            end
+
+            % Should be set before MetaDataType/ActiveMetadataType
+            if isfield(propValues, "CustomActions") 
+                if ~isempty(propValues.CustomActions)
+                    comp.CustomActions = propValues.CustomActions;
+                end
+                propValues = rmfield(propValues, "CustomActions");
+            end
+            if ~isempty(comp.CustomActions)
+                [comp.CustomActions(:).ParentComponent] = deal(comp);
+                [comp.CustomActions(:).AncestorFigure] = deal(ancestor(comp, 'figure'));
+            end
 
             % NB: In order to correctly initialize, MetaDataType needs to
             % be set after collections are set.
@@ -236,6 +262,7 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
         
         % Public properties
         function set.Value(comp, value)
+            if isa(value, 'cell'); value = [value{:}]; end
             comp.Value = value;
             comp.postSetValue()
         end
@@ -250,6 +277,11 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
         function set.ActionButtonType(comp, value)
             comp.ActionButtonType = value;
             comp.postSetActionTypeButton()
+        end
+
+        function set.MetadataTypeConstraints(obj, value)
+            obj.MetadataTypeConstraints = value;
+            obj.postSetMetadataTypeConstraints()
         end
 
         % Immutable properties
@@ -326,6 +358,11 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
         end
 
         function postSetActiveMetadataType(comp)
+            % Need to set before updating items from collection!
+            if ~isempty(comp.CustomActions)
+                [comp.CustomActions(:).MetadataType] = comp.ActiveMetadataType;
+            end
+
             comp.updateItemsFromCollection()
 
             if ~isempty(comp.TypeSelectionContextMenu)
@@ -357,6 +394,10 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
             comp.ActiveMetadataType = comp.AllowedTypes(1);
         end
 
+        function postSetMetadataTypeConstraints(comp)
+            comp.updateItemsFromCollection()
+        end
+
         function postSetItems(comp)
             actions = comp.getActionsWithTypeLabels();
             if isempty(comp.RemoteMetadataCollection)
@@ -365,6 +406,11 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
 
             if ~comp.ShowCreateAction
                 actions(2) = [];
+            end
+
+            % Add custom action
+            if ~isempty(comp.CustomActions)
+                actions = [actions, comp.CustomActions.Label];
             end
 
             items = [actions, comp.Items];
@@ -456,9 +502,19 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
             value = comp.DropDown.Value;
             valueIndex = comp.DropDown.ValueIndex;
 
-            if any( strcmp(value, comp.Actions) )
+            if any(strcmp(value, [comp.CustomActions.Label]))
+                idx = find(strcmp(value, [comp.CustomActions.Label]));
+                [wasSuccess, newValue] = comp.CustomActions(idx).execute();
+       
+                % Todo: append to metadata collection
+                if ~wasSuccess % Reset dropdown selection
+                    comp.DropDown.Value = event.PreviousValue;
+                    return
+                end
                 
-                switch comp.DefaultActions( valueIndex)
+            elseif any( strcmp(value, comp.Actions) )
+                
+                switch comp.DefaultActions(valueIndex)
 
                     case "*Select a instance*"
                         % This should update the component's value with an
@@ -482,6 +538,7 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                     comp.DropDown.Value = event.PreviousValue;
                     return
                 end
+
             else
                 adjustedValueIndex = valueIndex - numel(comp.Actions);
                 newValue = comp.ItemsData{adjustedValueIndex};
@@ -625,17 +682,12 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
 
                 if contains(comp.ActiveMetadataType.ClassName, '.controlledterms')
                     controlledInstances = eval(sprintf('%s.CONTROLLED_INSTANCES', comp.ActiveMetadataType.ClassName));
-                    % Get the value of the "name" property of the instances and 
-                    % add to items data.
-                    for i = 1:numel(controlledInstances);
-                        thisInstance = feval(comp.ActiveMetadataType.ClassName, controlledInstances(i));
-                        if ~any(strcmp(arrayfun(@(i) string(i), itemsData), string(thisInstance)))
-                            itemsData = [itemsData, thisInstance]; %#ok<AGROW>
-                        end
-                    end
-                    % Todo: Consider whether to show the camelcase version
-                    % of name instead?
-                    %itemsData = [itemsData, controlledInstances];
+                    controlledInstances = arrayfun(@(x)feval(comp.ActiveMetadataType.ClassName, x), controlledInstances);
+                    itemsData = unique([itemsData, controlledInstances]);
+                end
+
+                if ~isempty(comp.MetadataTypeConstraints)
+                    itemsData = comp.applyConstraints(itemsData);
                 end
 
                 if ~isempty(itemsData)
@@ -817,6 +869,13 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                 wasSuccess = true;
             catch
                 wasSuccess = false;
+            end
+        end
+    
+        function instances = applyConstraints(comp, instances)
+            for i = 1:numel(comp.MetadataTypeConstraints)
+                constraint = comp.MetadataTypeConstraints(i);
+                instances = constraint.apply(instances);
             end
         end
     end

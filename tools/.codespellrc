@@ -1,0 +1,4 @@
+[codespell]
+skip = *.prj,*/code/+om/+external/**/*.m,*/code/external/*
+ignore-words-list = hTmp,siz,assignin,hAx,doubleclick
+
