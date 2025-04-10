@@ -99,7 +99,7 @@ classdef InteractiveOpenMINDSPlot < handle
             isInstances = ~startsWith(nodeIds, 'https');
             
             uniqueInstanceTypes = unique(nodeTypes);
-            uniqueIdx = linspace(1,256,numel(uniqueInstanceTypes));
+            uniqueIdx = round(linspace(1,256,numel(uniqueInstanceTypes)));
 
             for i = 1:numel(uniqueInstanceTypes)
                 isThisInstanceType = strcmp(nodeTypes, uniqueInstanceTypes{i});
