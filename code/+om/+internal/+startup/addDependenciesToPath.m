@@ -5,13 +5,18 @@ function addDependenciesToPath()
     
     reqs = om.internal.startup.getRequirements();
 
+    % Add all addons in the package's addon folder to path
+    addonLocation = om.internal.constant.AddonTargetFolder();
+
     for i = 1:numel(reqs)
         switch reqs(i).Type
             case 'GitHub'
-                % Todo.
-                %[repoUrl, branchName] = parseGitHubUrl(reqs(i).URI);
-                %om.internal.startup.installGithubRepository( repoUrl, branchName )
-            
+                [~, repositoryName, branchName] = parseRepositoryURL(reqs(i).URI);
+                installLocation = fullfile(addonLocation, sprintf('%s-%s', repositoryName, branchName));
+                if isfolder(installLocation)
+                    addGithubDependencyToPath(installLocation)
+                end
+
             case 'FileExchange'
                 [packageUuid, version] = om.internal.startup.fex.parseFileExchangeURI( reqs(i).URI );
                 [isInstalled, version] = om.internal.startup.fex.isToolboxInstalled(packageUuid, version);
@@ -22,27 +27,46 @@ function addDependenciesToPath()
                 continue
         end
     end
+end
+
+function [organization, repositoryName, branchName] = parseRepositoryURL(repoUrl)
+% parseRepositoryURL - Extract organization, repository name and branch name
     
-    % Add all addons in the package's addon folder to path
-    addonLocation = om.internal.constant.AddonTargetFolder();
+    arguments
+        repoUrl (1,1) matlab.net.URI
+    end
+    
+    if repoUrl.Host ~= "github.com"
+        error("SETUPTOOLS:GITHUB:InvalidRepositoryURL", ...
+            "Please make sure the repository URL's host name is 'github.com'")
+    end
+    
+    pathNames = repoUrl.Path;
+    pathNames( cellfun('isempty', pathNames) ) = [];
 
-    addonListing = dir(addonLocation);
+    organization = pathNames(1);
+    repositoryName = pathNames(2);
 
-    for i = 1:numel(addonListing)
-        if startsWith(addonListing(i).name, '.')
-            continue
-        end
-        if ~addonListing(i).isdir
-            continue
-        end
+    if contains(repositoryName, '@')
+        splitName = split(repositoryName, '@');
+        repositoryName = splitName(1);
+        branchName = splitName(2);
+    else
+        branchName = "main";
+    end
 
-        folderPath = fullfile(addonListing(i).folder, addonListing(i).name);
-        startupFile = om.internal.startup.findStartupFile(folderPath);
-        
-        if ~isempty(startupFile)
-            run( startupFile )
-        else
-            addpath(genpath(folderPath))
-        end
+    if nargout < 3
+        clear branchName
     end
 end
+
+function addGithubDependencyToPath(folderPath)
+    startupFile = om.internal.startup.findStartupFile(folderPath);
+    
+    if ~isempty(startupFile)
+        run( startupFile )
+    else
+        addpath(genpath(folderPath))
+    end
+end
+
