@@ -1,8 +1,11 @@
 function addDependenciesToPath()
-    
-     reqs = om.internal.setup.getRequirements();
 
-     for i = 1:numel(reqs)
+    warnState = warning('off', 'MATLAB:javaclasspath:jarAlreadySpecified');
+    warnCleanupObj = onCleanup(@() warning(warnState));
+
+    reqs = om.internal.setup.getRequirements();
+
+    for i = 1:numel(reqs)
         switch reqs(i).Type
             case 'GitHub'
                 % Todo.
