@@ -2,30 +2,30 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="/resources/img/dark_openMINDS-MATLAB-logo.png">
     <source media="(prefers-color-scheme: light)" srcset="/resources/img/light_openMINDS-MATLAB-logo.png">
-    <img alt="openMINDS-MATLAB-logo" src="/resources/img/light_openMINDS-MATLAB-logo.png" title="openMINDS-MATLAB-UI" align="right" height="70" width="141px"​>
+    <img alt="openMINDS-MATLAB-logo" src="/resources/img/light_openMINDS-MATLAB-logo.png" title="openMINDS-MATLAB-GUI" align="right" height="70" width="141px"​>
   </picture>
 </a>
 
-# openMINDS-MATLAB-UI
+# openMINDS-MATLAB-GUI
 
 <h4 align="center">
-  <a href="https://github.com/ehennestad/openMINDS-MATLAB-UI/releases/latest">
-    <img src="https://img.shields.io/github/v/release/ehennestad/openMINDS-MATLAB-UI?label=version" alt="Version">
+  <a href="https://github.com/ehennestad/openMINDS-MATLAB-GUI/releases/latest">
+    <img src="https://img.shields.io/github/v/release/ehennestad/openMINDS-MATLAB-GUI?label=version" alt="Version">
   </a>
-  <a href="https://matlab.mathworks.com/open/github/v1?repo=ehennestad/openMINDS-MATLAB-UI&file=code/gettingStarted.mlx">
+  <a href="https://matlab.mathworks.com/open/github/v1?repo=ehennestad/openMINDS-MATLAB-GUI&file=code/gettingStarted.mlx">
     <img src="https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg" alt="MATLAB Online">
   </a>
-  <a href="https://codecov.io/gh/ehennestad/openMINDS-MATLAB-UI" > 
-    <img src="https://codecov.io/gh/ehennestad/openMINDS-MATLAB-UI/branch/main/graph/badge.svg?token=24628T3GQP" alt="Codecov">
+  <a href="https://codecov.io/gh/ehennestad/openMINDS-MATLAB-GUI" > 
+    <img src="https://codecov.io/gh/ehennestad/openMINDS-MATLAB-GUI/branch/main/graph/badge.svg?token=24628T3GQP" alt="Codecov">
   </a>
-  <a href="https://github.com/ehennestad/openMINDS-MATLAB-UI/actions/workflows/update.yml">
+  <a href="https://github.com/ehennestad/openMINDS-MATLAB-GUI/actions/workflows/update.yml">
    <img src=".github/badges/tests.svg" alt="Run tests">
   </a>
-  <a href="https://github.com/ehennestad/openMINDS-MATLAB-UI/security/code-scanning">
+  <a href="https://github.com/ehennestad/openMINDS-MATLAB-GUI/security/code-scanning">
    <img src=".github/badges/code_issues.svg" alt="Run Code Analyzer">
   </a>
-  <a href="https://github.com/ehennestad/openMINDS-MATLAB-UI/actions/workflows/run_codespell.yml?query=event%3Apush+branch%3Amain">
-   <img src="https://github.com/ehennestad/openMINDS-MATLAB-UI/actions/workflows/run_codespell.yml/badge.svg?branch=main" alt="Codespell">
+  <a href="https://github.com/ehennestad/openMINDS-MATLAB-GUI/actions/workflows/run_codespell.yml?query=event%3Apush+branch%3Amain">
+   <img src="https://github.com/ehennestad/openMINDS-MATLAB-GUI/actions/workflows/run_codespell.yml/badge.svg?branch=main" alt="Codespell">
   </a>
 </h4>
 
