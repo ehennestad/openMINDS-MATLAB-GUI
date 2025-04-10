@@ -13,5 +13,4 @@ classdef CollectionChangedEventData < event.EventData
             obj.AffectedTypes = {};
         end
     end
-
 end

@@ -39,6 +39,6 @@ function [tf, versionString, toolboxFolder] = isToolboxInstalled(toolboxIdentifi
     if nargout < 2
         clear versionString toolboxFolder
     elseif nargout < 3
-        clear toolboxFolder 
+        clear toolboxFolder
     end
 end

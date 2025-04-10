@@ -17,7 +17,7 @@ function addDependenciesToPath()
                 end
             case 'Unknown'
                 continue
-        end        
+        end
     end
     
     % Add all addons in the package's addon folder to path
@@ -37,7 +37,7 @@ function addDependenciesToPath()
         startupFile = om.internal.setup.findStartupFile(folderPath);
         
         if ~isempty(startupFile)
-            run( startupFile ) 
+            run( startupFile )
         else
             addpath(genpath(folderPath))
         end

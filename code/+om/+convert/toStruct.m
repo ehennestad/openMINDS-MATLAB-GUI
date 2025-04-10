@@ -1,9 +1,9 @@
 function structInstance = toStruct(openMindsInstance, metadataCollection)
     
-    if isempty( openMindsInstance ) 
+    if isempty( openMindsInstance )
         structInstance = struct.empty; return
 
-    elseif numel( openMindsInstance ) > 1 
+    elseif numel( openMindsInstance ) > 1
         structInstance = cell(1, numel(openMindsInstance) );
         for i = 1:numel(structInstance)
             structInstance{i} = om.convert.toStruct( openMindsInstance(i), metadataCollection );
@@ -120,7 +120,6 @@ function [value, config] = getConfigForScalarValue(name, value, openMindsInstanc
         "UpstreamInstanceType", openminds.internal.utility.getSchemaName(class(openMindsInstance)), ...
         "UpstreamInstancePropertyName", name);
 end
-
 
 function [value, config] = getConfigForNonScalarValue(name, value, openMindsInstance, metadataCollection)
 

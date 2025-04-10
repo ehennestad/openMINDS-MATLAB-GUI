@@ -15,5 +15,4 @@ classdef CollectionChangedEventType < handle
             obj.Name = eventType;
         end
     end
-
 end

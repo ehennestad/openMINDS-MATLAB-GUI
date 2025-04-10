@@ -52,7 +52,6 @@ function repoFolder = downloadZippedGithubRepo(githubUrl, targetFolder, updateFl
     %repoFolder = restructureUnzippedGithubRepo(targetFolder);
 end
 
-
 function folderPath = restructureUnzippedGithubRepo(folderPath)
 %restructureUnzippedGithubRepo Move the folder of a github addon.
 %

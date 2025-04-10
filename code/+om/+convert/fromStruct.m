@@ -46,7 +46,7 @@ function instance = fromStruct(instance, data, metadataCollection)
                 end
             end
 
-            % Get "null" instance 
+            % Get "null" instance
             if ~isa(linkedInstance, 'openminds.abstract.Schema')
                 if isempty(linkedInstance)
                     linkedInstance = feval(sprintf('%s.empty', schemaName));
@@ -70,7 +70,6 @@ function instance = fromStruct(instance, data, metadataCollection)
         end
     end
 end
-
 
 function tf = isSchemaInstanceUnavailable(value)
     tf = ~isempty(regexp(char(value), 'No \w* available', 'once'));

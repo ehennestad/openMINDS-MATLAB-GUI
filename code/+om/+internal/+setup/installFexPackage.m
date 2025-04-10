@@ -82,7 +82,6 @@ function installFexPackage(toolboxIdentifier, installLocation, options)
     end
 end
 
-
 function toolboxName = retrieveToolboxName(toolboxIdentifier)
     fex = matlab.addons.repositories.FileExchangeRepository();
 

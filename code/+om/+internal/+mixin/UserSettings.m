@@ -1,7 +1,7 @@
 classdef UserSettings < applify.mixin.UserSettings
 %nansen.mixin.UserSettings Subclass the applify.mixin.UserSettings to redefine
-%   the default saving policy for settings files. Settings will be saved to 
-%   the matlab's userpath folder instead of being saved locally next the 
+%   the default saving policy for settings files. Settings will be saved to
+%   the matlab's userpath folder instead of being saved locally next the
 %   owning class file definition.
 %
 %   Any class that inherits this class must implement the following:
@@ -28,8 +28,7 @@ classdef UserSettings < applify.mixin.UserSettings
         %   the reference for calling up the static method.
             
             className = class(obj);
-            pathStr = om.internal.mixin.UserSettings.createFilePath(className); 
-            
+            pathStr = om.internal.mixin.UserSettings.createFilePath(className);
         end
     end
     
@@ -46,7 +45,7 @@ classdef UserSettings < applify.mixin.UserSettings
         end
         
         function pathStr = createFilePath(className)
-        %createSettingsPath Create filepath for settings of subclass 
+        %createSettingsPath Create filepath for settings of subclass
             
             % Save settings into the nansen/_userdata folder.
             settingsFolderPath = fullfile(userpath, 'openMINDS', 'settings');
@@ -61,7 +60,5 @@ classdef UserSettings < applify.mixin.UserSettings
             % Return the filepath where to save and load settings from
             pathStr = fullfile(settingsFolderPath, settingsFileName);
         end
-        
     end
-
 end

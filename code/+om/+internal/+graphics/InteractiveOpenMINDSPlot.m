@@ -7,10 +7,9 @@ classdef InteractiveOpenMINDSPlot < handle
     % [ ] Add methods for plotting subgraps? Or should that be a separate
     %     panel in the main app for plotting subgraphs?
 
-    % Todo: 
+    % Todo:
     % Add active boolean that can be turned on and off from external gui
-    % Deactivate figure mouse listener if this plot is not active. 
-
+    % Deactivate figure mouse listener if this plot is not active.
 
     properties
          ColorMap = 'viridis'
@@ -35,7 +34,7 @@ classdef InteractiveOpenMINDSPlot < handle
         MouseMotionListener event.listener
     end
 
-    methods 
+    methods
         function obj = InteractiveOpenMINDSPlot(graphObj, hAxes, e)
             
             obj.DirectedGraph = graphObj;
@@ -66,7 +65,7 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.MouseMotionListener = listener(hFigure, "WindowMouseMotion", ...
                 @obj.onWindowMouseMotion);
             %obj.Axes.YDir = 'reverse';
-        end 
+        end
     end
 
     methods % Set/Get
@@ -82,7 +81,7 @@ classdef InteractiveOpenMINDSPlot < handle
                 obj.DirectedGraph = graphObj;
             end
 
-            delete( obj.GraphPlot )        
+            delete( obj.GraphPlot )
             hold(obj.Axes, 'off')
 
             %obj.DirectedGraph.Nodes.Name = arrayfun(@(x) num2str(x), 1:height(obj.DirectedGraph.Nodes), 'UniformOutput', false)';
@@ -143,7 +142,7 @@ classdef InteractiveOpenMINDSPlot < handle
             if isa(h, 'matlab.graphics.chart.primitive.GraphPlot')
                 
                 point = src.CurrentPoint;
-                x = point(1); y = point(2); 
+                x = point(1); y = point(2);
                 
                 axesPosition = getpixelposition(obj.Axes,true);
                 x = x - axesPosition(1);

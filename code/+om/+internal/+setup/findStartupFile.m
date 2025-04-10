@@ -3,7 +3,7 @@ function startupFilePath = findStartupFile(folderPath)
 %
 %   This function is meant to look for a startup.m file in a matlab
 %   repository or package. It will look for the file in the root directory
-%   and one folder level down. 
+%   and one folder level down.
 
     if ~isfolder(folderPath)
         error('Provided folder does not exist')
