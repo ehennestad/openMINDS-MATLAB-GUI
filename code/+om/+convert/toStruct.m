@@ -59,8 +59,14 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
             iValue = categorical(names(1), names);
 
         elseif isa(iValue, 'openminds.abstract.ControlledTerm')
-            names = eval( sprintf('%s.CONTROLLED_INSTANCES', class(iValue)));
-            iValue = categorical(names(1), names);
+            %names = eval( sprintf('%s.CONTROLLED_INSTANCES', class(iValue)));
+            %iValue = categorical(names(1), names);
+            
+            if metaSchema.isPropertyValueScalar(iPropName)
+                customFcn = @getConfigForScalarValue;
+            else
+                customFcn = @getConfigForNonScalarValue;
+            end
 
         elseif isa(iValue, 'openminds.abstract.Schema')
             if metaSchema.isPropertyValueScalar(iPropName)
