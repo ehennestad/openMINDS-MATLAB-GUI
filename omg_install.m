@@ -1,19 +1,19 @@
-function omg_install(mode, options)
+function omg_install(flags, options)
 % omg_install - Runs first time setup for openMINDS-MATLAB-GUI (omg)
     
     arguments (Repeating)
-        mode (1,1) string {mustBeMember(mode, ["force", "f", "update", "u", "savepath", "s"])};
+        flags (1,1) string {mustBeMember(flags, ["force", "f", "update", "u", "savepath", "s"])};
     end
 
     arguments
         options.SavePathDef (1,1) logical = false 
     end
 
-    mode = string(mode);
+    flags = string(flags);
 
-    if any(mode == "s") || any(mode == "savepath")
+    if any(flags == "s") || any(flags == "savepath")
         options.SavePathDef = true;
-        mode = setdiff(mode, ["s", "savepath"], 'stable');
+        flags = setdiff(flags, ["s", "savepath"], 'stable');
     end
 
     % Assumes omg_install.m is located in the root folder of the repository 
@@ -22,12 +22,15 @@ function omg_install(mode, options)
     addpath(genpath(fullfile(omuiRootPath, 'tools')))
     
     omuitools.installMatBox("commit")
-    matbox.installRequirements(omuiRootPath, mode{:})
+
+    % Turn off warning that might show if the WidgetsToolbox dependency is
+    % already installed
+    warnState = warning('off', 'MATLAB:javaclasspath:jarAlreadySpecified');
+    warnCleanupObj = onCleanup(@() warning(warnState));
+
+    matbox.installRequirements(omuiRootPath, flags{:}, ...
+        "SaveSearchPath", options.SavePathDef)
 
     run( fullfile(om.internal.rootpath, 'startup.m') )
     %matbox.runStartupFile(omgRootPath); % Future
-
-    if options.SavePathDef
-        savepath()
-    end
 end
