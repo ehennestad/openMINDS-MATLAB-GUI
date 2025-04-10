@@ -1,4 +1,5 @@
-function setup(mode, options)
+function omg_install(mode, options)
+% omg_install - Runs first time setup for openMINDS-MATLAB-GUI (omg)
     
     arguments (Repeating)
         mode (1,1) string {mustBeMember(mode, ["force", "f", "update", "u", "savepath", "s"])};
@@ -15,14 +16,16 @@ function setup(mode, options)
         mode = setdiff(mode, ["s", "savepath"], 'stable');
     end
 
-    % Assumes setup.m is located in root repository folder
-    rootPath = fileparts(mfilename('fullpath'));
-    addpath(genpath(fullfile(rootPath, 'code')))
-    addpath(genpath(fullfile(rootPath, 'devtools')))
+    % Assumes omg_install.m is located in the root folder of the repository 
+    omuiRootPath = fileparts(mfilename('fullpath'));
+    addpath(genpath(fullfile(omuiRootPath, 'code')))
+    addpath(genpath(fullfile(omuiRootPath, 'tools')))
     
-    om.internal.setup.installRequirements(mode{:})
+    omuitools.installMatBox("commit")
+    matbox.installRequirements(omuiRootPath, mode{:})
 
     run( fullfile(om.internal.rootpath, 'startup.m') )
+    %matbox.runStartupFile(omgRootPath); % Future
 
     if options.SavePathDef
         savepath()

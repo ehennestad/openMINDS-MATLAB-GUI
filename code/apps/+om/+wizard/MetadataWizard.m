@@ -50,10 +50,6 @@ classdef MetadataWizard < wizard.WizardApp
             arguments
                 datasetFolder (1,1) string = missing
             end
-            
-            if exist('wt.FileSelector', 'class') ~= 8 % Install Widgets Toolbox
-                om.internal.setup.installFexPackage("78895307-cc36-4970-8b66-0697da8f9352", "") 
-            end
 
             if ~ismissing(datasetFolder)
                 app.DatasetRootDirectory = datasetFolder;
