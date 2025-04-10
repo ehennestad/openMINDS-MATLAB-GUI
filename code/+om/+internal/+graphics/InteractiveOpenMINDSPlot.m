@@ -88,7 +88,7 @@ classdef InteractiveOpenMINDSPlot < handle
             %obj.GraphPlot = plot(obj.Axes, graphObj, 'Layout', 'force');
             obj.GraphPlot = plot(obj.Axes, obj.DirectedGraph, 'Layout', obj.Layout);
             %obj.GraphPlot.NodeLabel = obj.DirectedGraph.Nodes.Name;
-
+            obj.GraphPlot.NodeLabel = [];
             numNodes = obj.DirectedGraph.numnodes;
             colors = colormap(obj.ColorMap);
             

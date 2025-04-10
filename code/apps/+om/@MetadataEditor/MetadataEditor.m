@@ -381,6 +381,11 @@ classdef MetadataEditor < handle
 
             columnSettings = obj.loadMetatableColumnSettings();
             nvPairs = {'ColumnSettings', columnSettings, 'TableFontSize', 8};
+            
+            % Need to ensure a nansen user session is active before
+            % creating meta table viewer. Todo: Should not be necessary
+            nansen.internal.user.NansenUserSession.instance();
+            
             h = nansen.MetaTableViewer( obj.UIContainer.UITab(1), [], nvPairs{:});
             h.HTable.KeyPressFcn = @obj.onKeyPressed;
             obj.UIMetaTableViewer = h;

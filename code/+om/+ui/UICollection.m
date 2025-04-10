@@ -663,8 +663,10 @@ classdef UICollection < openminds.Collection
                         
                         % Build categorical after all potential options are
                         % collected
+                        uniqueOptions = unique(options);
+                        uniqueOptions(uniqueOptions == "") = [];
                         for jRow = 1:numRows
-                            rowValues{jRow} = categorical(thisValue, unique(options), 'Protected', true);
+                            rowValues{jRow} = categorical(thisValue, uniqueOptions, 'Protected', true);
                         end
 
                         instanceTable.(thisColumnName) = cat(1, rowValues{:});
