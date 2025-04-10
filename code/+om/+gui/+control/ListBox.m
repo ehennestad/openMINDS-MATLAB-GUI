@@ -42,7 +42,6 @@ classdef ListBox < handle
 %     end
 
     methods
-        
         function obj = ListBox(hPanel, items)
             
             obj.Items = items;
@@ -97,7 +96,6 @@ classdef ListBox < handle
             
             obj.ButtonCollection = hToolbar;
             hToolbar.Location = 'northwest';
-
         end
 
         function delete(obj)
@@ -110,7 +108,6 @@ classdef ListBox < handle
             % Check selection mode, i.e single, multiple
 
             obj.updateSelectedItems(newValue)
-            
         end
 
         function selectedItems = get.SelectedItems(obj)
@@ -163,7 +160,6 @@ classdef ListBox < handle
                         src.Value = true;
                         triggerCallback = true;
                     end
-                
             end
 
             newSelection = {obj.SelectedButtons.Tag};
@@ -217,7 +213,6 @@ classdef ListBox < handle
                 end
             end
 
-
             % Call the SelectionChangedFcn if preset...
             if ~isempty(obj.SelectionChangedFcn)
                 %evt = event.EventData();
@@ -225,6 +220,5 @@ classdef ListBox < handle
                 obj.SelectionChangedFcn(obj, evt)
             end
         end
-
     end
 end

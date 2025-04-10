@@ -16,4 +16,3 @@ classdef ItemSelectionEventData < event.EventData
         end
     end
 end
-
