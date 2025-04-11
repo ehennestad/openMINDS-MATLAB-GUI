@@ -1,4 +1,4 @@
-function [G, edgeLabels] = generateGraph(modelName)
+function [G, edgeLabels] = generateGraph(module, optionals)
 % GENERATEGRAPH Generates a directed graph of class relationships for a specified OpenMINDS module.
 %
 %   G = GENERATEGRAPH(moduleName) constructs a directed graph G where the nodes
@@ -34,24 +34,26 @@ function [G, edgeLabels] = generateGraph(modelName)
 %   See also: digraph
 
     % Save graph
-    % Modify schemas to include incoming links/edges.
+    % Modify type classes to include incoming links/edges.
 
     arguments
-        modelName = 'core'
+        module (1,:) openminds.enum.Modules = 'core'
         %force = false
+        optionals.ClassNames (1,:) string = missing
     end
 
-    [s, t, e] = deal(cell(0,1));
+    % Retrieve all class names for the selected openMINDS module
+    types = module.listTypes();
+    typeClassNames = [types.ClassName];
 
-    types = enumeration( 'openminds.enum.Types' );
-    classNames = [types.ClassName];
-    keep = startsWith( classNames, sprintf('openminds.%s', modelName) );
-    classNames = classNames(keep);
+    % Initialize lists to populate
+    [sources, targets, edges] = deal(cell(0,1));
+    [labels, types] = deal(string.empty);
 
-    numTypes = numel(classNames);
+    numTypes = numel(typeClassNames);
 
     for i = 1:numTypes
-        classFcn = str2func(classNames(i));
+        classFcn = str2func(typeClassNames(i));
         
         try
             tempObj = classFcn();
@@ -66,9 +68,10 @@ function [G, edgeLabels] = generateGraph(modelName)
                 if isa(iValue, 'openminds.abstract.Schema') && ~isa(iValue, 'openminds.controlledterm.ControlledTerm')
                     [~, ~, targetName] = fileparts( class(iValue) );
 
-                    s{end+1} = sourceName(2:end); %#ok<AGROW>
-                    t{end+1} = targetName(2:end); %#ok<AGROW>
-                    e{end+1} = propertyNames{j}; %#ok<AGROW>
+                    sources{end+1} = sourceName(2:end); %#ok<AGROW>
+                    targets{end+1} = targetName(2:end); %#ok<AGROW>
+                    edges{end+1} = propertyNames{j}; %#ok<AGROW>
+                
                 elseif isa(iValue, 'openminds.internal.abstract.LinkedCategory')
 
                     allowedTypes = eval(sprintf("%s.ALLOWED_TYPES", class(iValue)));
@@ -76,17 +79,24 @@ function [G, edgeLabels] = generateGraph(modelName)
                     for k = 1:numel(allowedTypes)
                         [~, ~, targetName] = fileparts( allowedTypes{k} );
                         
-                        s{end+1} = sourceName(2:end); %#ok<AGROW>
-                        t{end+1} = targetName(2:end); %#ok<AGROW>
-                        e{end+1} = propertyNames{j}; %#ok<AGROW>
+                        sources{end+1} = sourceName(2:end); %#ok<AGROW>
+                        targets{end+1} = targetName(2:end); %#ok<AGROW>
+                        edges{end+1} = propertyNames{j}; %#ok<AGROW>
                     end
                 end
             end
         end
     end
 
-    G = digraph(s,t);
+    %Todo create a notetable:
+    % nodeTable = table(...
+    %     string(instanceId), ...
+    %     string(instance), ...
+    %     string(openminds.internal.utility.getSchemaShortName(class(instance))), ...
+    %     'VariableNames', {'Name' 'Label', 'Type'});
+
+    G = digraph(sources,targets);
     if nargout == 2
-        edgeLabels = e;
+        edgeLabels = edges;
     end
 end
