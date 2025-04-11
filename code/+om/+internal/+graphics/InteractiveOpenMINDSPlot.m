@@ -16,6 +16,7 @@ classdef InteractiveOpenMINDSPlot < handle
          ShowNodeLabels
          ShowEdgeLabels
          Layout (1,1) string = "auto"
+         MarkerSize = 14
     end
 
     properties (Access = protected) % data
@@ -28,6 +29,7 @@ classdef InteractiveOpenMINDSPlot < handle
         NodeTransporter
         PointerManager
         DataTip
+        ActiveNode
     end
 
     properties (Access = protected)
@@ -58,10 +60,9 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.PointerManager = uim.interface.pointerManager(hFigure, ...
                 obj.Axes, {'zoomIn', 'zoomOut', 'pan'});
             addlistener(hFigure, 'WindowKeyPress', @obj.keyPress);
-            
-            obj.DataTip = text(obj.Axes, 0,0,'','FontSize',14, ...
-                'HitTest', 'off', 'PickableParts', 'none', 'Interpreter', 'none');
-            uistack(obj.DataTip, 'top');
+
+            obj.plotMouseOverElements()
+
             obj.MouseMotionListener = listener(hFigure, "WindowMouseMotion", ...
                 @obj.onWindowMouseMotion);
             %obj.Axes.YDir = 'reverse';
@@ -108,7 +109,7 @@ classdef InteractiveOpenMINDSPlot < handle
 
             obj.GraphPlot.NodeColor = colors(randIdx, :);
             
-            obj.GraphPlot.MarkerSize = 14;
+            obj.GraphPlot.MarkerSize = obj.MarkerSize;
             obj.GraphPlot.LineWidth = 1;
             obj.GraphPlot.EdgeColor = ones(1, 3)*0.6;
             
@@ -125,13 +126,30 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.NodeTransporter = GraphNodeTransporter(obj.Axes);
             obj.GraphPlot.ButtonDownFcn = @(s,e) obj.NodeTransporter.startDrag(s,e);
 
-            obj.DataTip = text(obj.Axes, 0,0,'','FontSize', 10, ...
-                'HitTest', 'off', 'PickableParts', 'none', 'Interpreter', 'none');
-            uistack(obj.DataTip, 'top');
+            obj.plotMouseOverElements()
         end
 
         function keyPress(obj, src, event)
             wasCaptured = obj.PointerManager.onKeyPress([], event);
+        end
+    end
+    
+    methods (Access = private)
+        function plotMouseOverElements(obj)
+            obj.DataTip = text(obj.Axes, 0,0,'', ...
+                'FontSize',14, ...
+                'HitTest', 'off', ...
+                'PickableParts', 'none', ...
+                'Interpreter', 'none');
+            uistack(obj.DataTip, 'top');
+            
+            obj.ActiveNode = plot(obj.Axes, nan, nan, 'o', ...
+                'HitTest', 'off', ...
+                'PickableParts', 'none', ...
+                'Marker', 'o', ...
+                'MarkerSize', obj.MarkerSize+1, ...
+                'MarkerFaceColor', 'w');
+            uistack(obj.ActiveNode, 'top');
         end
     end
 
@@ -157,8 +175,8 @@ classdef InteractiveOpenMINDSPlot < handle
                 % Find Node Index
                 graphObj = obj.GraphPlot;
                 %graphObj.XData
-                deltaX = diff(obj.Axes.XLim) / axesPosition(3) * 20;
-                deltaY = diff(obj.Axes.YLim) / axesPosition(4) * 20;
+                deltaX = diff(obj.Axes.XLim) / axesPosition(3) * 10;
+                deltaY = diff(obj.Axes.YLim) / axesPosition(4) * 10;
     
                 isOnX = abs( graphObj.XData - xAxesUnit ) < deltaX;
                 isOnY = abs( graphObj.YData - yAxesUnit ) < deltaY;
@@ -171,8 +189,12 @@ classdef InteractiveOpenMINDSPlot < handle
                     obj.DataTip.String = sprintf('%s (%s)', ...
                         obj.DirectedGraph.Nodes.Label{nodeIdx}, ...
                         obj.DirectedGraph.Nodes.Type{nodeIdx});
+                    obj.ActiveNode.XData = graphObj.XData(nodeIdx);
+                    obj.ActiveNode.YData = graphObj.YData(nodeIdx);
                 else
                     obj.DataTip.String = '';
+                    obj.ActiveNode.XData = nan;
+                    obj.ActiveNode.YData = nan;
                 end
             else
                 %obj.DataTip.String = '';
