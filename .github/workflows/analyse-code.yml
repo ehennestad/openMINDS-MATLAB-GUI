@@ -1,11 +1,7 @@
 name: Analyse code
 
 on:
-  push:
-    branches: [ "main" ]
-    
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
