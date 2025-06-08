@@ -1,11 +1,7 @@
 name: Analyse code
 
 on:
-  push:
-    branches: [ "main" ]
-    
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,6 +10,6 @@ concurrency:
 jobs:
   reuse-workflow-check-code:
     name: Run code analyser
-    uses: ehennestad/matbox/.github/workflows/reusable_check_code.yml@add-reusable-test-workflow
-    secrets:
-      commit_email_address: ${{ secrets.COMMIT_EMAIL_ADDRESS }}
+    uses: ehennestad/matbox/.github/workflows/reusable_check_code.yml@v0.9
+    with:
+      matlab_use_cache: true
