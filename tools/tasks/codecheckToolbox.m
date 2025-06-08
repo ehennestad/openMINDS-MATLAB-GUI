@@ -1,7 +1,6 @@
 function issues = codecheckToolbox()
 % codecheckToolbox - Identify code issues for openMINDS_MATLAB toolbox
 
-    omuitools.installMatBox("commit")
     projectRootDirectory = omuitools.projectdir();
     
     toolboxFileInfo = dir(fullfile(projectRootDirectory, "**", "*.m"));
