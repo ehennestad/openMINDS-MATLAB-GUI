@@ -15,3 +15,5 @@ jobs:
   reuse-workflow-check-code:
     name: Run code analyser
     uses: ehennestad/matbox/.github/workflows/reusable_check_code.yml@v0.9
+    with:
+      matlab_use_cache: true
