@@ -600,7 +600,7 @@ classdef UICollection < openminds.Collection
             %tempStruct = table2struct(instanceTable(1,:));
             
             className = openminds.enum.Types(instanceType).ClassName;
-            metaSchema = openminds.internal.SchemaInspector(className);
+            metaSchema = openminds.internal.meta.Type(className);
 
             for i = 1:numColumns
                 thisColumnName = instanceTable.Properties.VariableNames{i};

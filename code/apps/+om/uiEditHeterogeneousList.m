@@ -11,7 +11,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
     propertyName = typePathSplit{end};
     
     % Sometimes mixed types comes in as "homogeneous" types.
-    metaSchema = openminds.internal.SchemaInspector( openminds.enum.Types(schemaName).ClassName );
+    metaSchema = openminds.internal.meta.Type( openminds.enum.Types(schemaName).ClassName );
     if metaSchema.isPropertyMixedType(propertyName)
         className = metaSchema.getMixedTypeForProperty(propertyName);
         metadataInstances = feval(className, metadataInstances);

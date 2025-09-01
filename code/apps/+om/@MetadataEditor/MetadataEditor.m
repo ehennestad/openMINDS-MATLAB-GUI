@@ -754,7 +754,7 @@ classdef MetadataEditor < handle
                 instance = feval(openMindsType.ClassName);  
                     
 
-                metaSchema = openminds.internal.SchemaInspector( instance );
+                metaSchema = openminds.internal.meta.Type( instance );
 
 
                 for i = 1:numel(varNames)

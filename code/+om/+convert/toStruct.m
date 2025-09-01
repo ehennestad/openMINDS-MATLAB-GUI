@@ -28,7 +28,7 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
     propertyOrder = om.internal.config.getPreferredPropertyOrder( openMindsType );
     structInstance = orderfields(structInstance, propertyOrder);
     
-    metaSchema = openminds.internal.SchemaInspector( openMindsInstance );
+    metaSchema = openminds.internal.meta.Type( openMindsInstance );
 
     % Fill out options for each property
     propNames = fieldnames(structInstance);
