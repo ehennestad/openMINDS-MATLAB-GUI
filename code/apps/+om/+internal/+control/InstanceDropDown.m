@@ -694,6 +694,10 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                     % Create items (string labels for items data)
                     items = arrayfun(@(i) string(char(i)), itemsData);
                 end
+
+                % Sort items for dropdowns by names/labels
+                [items, sortIdx] = sort(items);
+                itemsData = itemsData(sortIdx);
             end
 
             comp.Items = items;
