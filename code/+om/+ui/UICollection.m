@@ -23,6 +23,10 @@ classdef UICollection < openminds.Collection
         %metadata containers.Map
         graph digraph = digraph % Todo: Create a separate class?
     end
+
+    properties (Access = private)
+        EventStates
+    end
     
     events
         CollectionChanged
@@ -47,6 +51,8 @@ classdef UICollection < openminds.Collection
             % Create a graph object
             obj.graph = digraph;
             
+            obj.initializeEventStates()
+
             % If Nodes are provided, assign them and build the graph
             if ~isempty(options.Nodes)
                 obj.Nodes = options.Nodes;
@@ -72,8 +78,10 @@ classdef UICollection < openminds.Collection
                 % obj.addInstanceToGraph(instance, ancestorInstance) % ?
 
                 % - Notify collection changed
-                evtData = CollectionChangedEventData('INSTANCE_ADDED', instance);
-                obj.notify('CollectionChanged', evtData)
+                if obj.EventStates('CollectionChanged')
+                    evtData = CollectionChangedEventData('INSTANCE_ADDED', instance);
+                    obj.notify('CollectionChanged', evtData)
+                end
             end
         end
     
@@ -450,6 +458,17 @@ classdef UICollection < openminds.Collection
                 end
             end
         end
+    
+        function initializeEventStates(obj)
+            obj.EventStates = containers.Map();
+            
+            eventNames = events(obj);
+
+            for i = 1:numel(eventNames)
+                currentName = eventNames{i};
+                obj.EventStates(currentName) = matlab.lang.OnOffSwitchState.on;
+            end
+        end
     end
 
     methods (Access = private)
@@ -707,6 +726,16 @@ classdef UICollection < openminds.Collection
 
     methods
         function exist()
+        end
+    end
+    
+    methods (Access = ?om.MetadataEditor)
+        function enableEvent(obj, eventName)
+            obj.EventStates(eventName) = matlab.lang.OnOffSwitchState.on;
+        end
+
+        function disableEvent(obj, eventName)
+            obj.EventStates(eventName) = matlab.lang.OnOffSwitchState.off;
         end
     end
 

@@ -82,6 +82,9 @@ classdef MetadataEditor < handle
             if nargin < 1            
                 obj.loadMetadataCollection()
             else
+                if isa(metadataCollection, 'openminds.Collection')
+                    metadataCollection = om.ui.UICollection.fromCollection(metadataCollection);
+                end
                 obj.MetadataCollection = metadataCollection;
                 %obj.MetadataCollection.createListenersForAllInstances()
             end
@@ -606,12 +609,15 @@ classdef MetadataEditor < handle
                     return
             end
 
+            obj.MetadataCollection.disableEvent('CollectionChanged')
             om.uiCreateNewInstance(functionName, obj.MetadataCollection, "NumInstances", n)
-
-            % Todo: update tables...!
+            obj.MetadataCollection.enableEvent('CollectionChanged')
+            obj.MetadataCollection.notify('CollectionChanged', event.EventData)
 
             className = functionNameSplit{end};
             obj.changeSelection(className)
+
+            % Todo: update tables...!
         end
 
         function onCreateNewButtonPressed(obj, src, evt)
@@ -652,8 +658,10 @@ classdef MetadataEditor < handle
             type = obj.CurrentSchemaTableName;
              
             % Todo: Support removing multiple instances.
-            instanceID = obj.CurrentTableInstanceIds{selectedIdx};
-            obj.MetadataCollection.remove(instanceID)
+            instanceID = obj.CurrentTableInstanceIds(selectedIdx);
+            for i = 1:numel(instanceID)
+                obj.MetadataCollection.remove(instanceID{i})
+            end
 
             %obj.MetadataCollection.removeInstance(type, selectedIdx)
 
@@ -662,7 +670,6 @@ classdef MetadataEditor < handle
             obj.CurrentTableInstanceIds = ids;
             %app.MetaTable.removeEntries(selectedEntries)
             %app.UiMetaTableViewer.refreshTable(app.MetaTable)
-
         end
     
         function onMouseDoubleClickedInTable(obj, src, evt)
