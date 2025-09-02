@@ -25,7 +25,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
         
     if iscell(metadataInstances); metadataInstances = [metadataInstances{:}]; end
 
-    isHeterogeneous = isa(metadataInstances, 'openminds.internal.abstract.LinkedCategory');
+    isHeterogeneous = isa(metadataInstances, 'openminds.internal.abstract.MixedTypeSet');
 
     numInstances = numel( metadataInstances );
     if numInstances >= 1
@@ -120,7 +120,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
                     if isa(metadataInstances, 'openminds.abstract.Schema')
                         isInstance = strcmp( {metadataInstances.id}, iData.id );
                         iInstance = metadataInstances(isInstance);
-                    elseif isa(metadataInstances, 'openminds.internal.abstract.LinkedCategory')
+                    elseif isa(metadataInstances, 'openminds.internal.abstract.MixedTypeSet')
                         instanceIds = arrayfun(@(x) x.Instance.id, metadataInstances, 'uni', false);
                         isInstance = strcmp( instanceIds, iData.id );
                         if any(isInstance)

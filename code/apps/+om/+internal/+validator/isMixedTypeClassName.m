@@ -7,7 +7,7 @@ function tf = isMixedTypeClassName(className)
     try
         mc = meta.class.fromName(className);
         superClassNames = {mc.SuperclassList.Name};
-        expectedSuperClassName = "openminds.internal.abstract.LinkedCategory";
+        expectedSuperClassName = "openminds.internal.abstract.MixedTypeSet";
         tf = any( strcmp(superClassNames, expectedSuperClassName) );
     catch
         tf = false;

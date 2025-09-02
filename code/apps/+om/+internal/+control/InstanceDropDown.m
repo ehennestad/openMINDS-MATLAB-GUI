@@ -814,7 +814,7 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
         function wasSuccess = editInstance(comp)
             wasSuccess = false;
 
-            if isa(comp.Value, 'openminds.internal.abstract.LinkedCategory')
+            if isa(comp.Value, 'openminds.internal.abstract.MixedTypeSet')
                 currentValue = comp.Value.Instance;
             else
                 currentValue = comp.Value;

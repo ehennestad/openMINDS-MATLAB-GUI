@@ -13,7 +13,7 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
     end
 
     % NB: Special case. Todo: Consider to make this more internal.
-    if isa(openMindsInstance, 'openminds.internal.abstract.LinkedCategory')
+    if isa(openMindsInstance, 'openminds.internal.abstract.MixedTypeSet')
         openMindsInstance = openMindsInstance.Instance;
     end
 
@@ -75,7 +75,7 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
                 customFcn = @getConfigForNonScalarValue;
             end
 
-        elseif isa(iValue, 'openminds.internal.abstract.LinkedCategory') % oneOf/anyOf
+        elseif isa(iValue, 'openminds.internal.abstract.MixedTypeSet') % oneOf/anyOf
             if metaSchema.isPropertyValueScalar(iPropName)
                 customFcn = @getConfigForHeterogeneousScalarValue;
             else
@@ -153,7 +153,7 @@ function [value, config] = getConfigForHeterogeneousScalarValue(name, value, ope
         
     arguments
         name char
-        value openminds.internal.abstract.LinkedCategory
+        value openminds.internal.abstract.MixedTypeSet
         openMindsInstance openminds.abstract.Schema
         metadataCollection openminds.Collection
     end

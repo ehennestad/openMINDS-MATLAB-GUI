@@ -1,3 +1,3 @@
 function tf = isMixedType(object)
-    tf = isa(object, 'openminds.internal.abstract.LinkedCategory');
+    tf = isa(object, 'openminds.internal.abstract.MixedTypeSet');
 end

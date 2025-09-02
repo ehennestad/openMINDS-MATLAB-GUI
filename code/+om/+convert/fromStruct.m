@@ -50,7 +50,7 @@ function instance = fromStruct(instance, data, metadataCollection)
             if ~isa(linkedInstance, 'openminds.abstract.Schema')
                 if isempty(linkedInstance)
                     linkedInstance = feval(sprintf('%s.empty', schemaName));
-                elseif isa(linkedInstance, 'openminds.internal.abstract.LinkedCategory')
+                elseif isa(linkedInstance, 'openminds.internal.abstract.MixedTypeSet')
                     % pass
                 else
                     keyboard
@@ -59,7 +59,7 @@ function instance = fromStruct(instance, data, metadataCollection)
             end
             
             instance.(iPropName) = linkedInstance;
-        elseif isa(iValue, 'openminds.internal.abstract.LinkedCategory')
+        elseif isa(iValue, 'openminds.internal.abstract.MixedTypeSet')
             linkedInstance = data.(iPropName);
             
             if isa(linkedInstance, 'cell')

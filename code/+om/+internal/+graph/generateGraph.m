@@ -72,7 +72,7 @@ function [G, edgeLabels] = generateGraph(module, optionals)
                     targets{end+1} = targetName(2:end); %#ok<AGROW>
                     edges{end+1} = propertyNames{j}; %#ok<AGROW>
                 
-                elseif isa(iValue, 'openminds.internal.abstract.LinkedCategory')
+                elseif isa(iValue, 'openminds.internal.abstract.MixedTypeSet')
 
                     allowedTypes = eval(sprintf("%s.ALLOWED_TYPES", class(iValue)));
 
