@@ -56,9 +56,10 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     % Fill out options for each property
     propNames = fieldnames(SOrig);
 
-    [~, ~, className] = fileparts(instanceSpec);
-    [className, classNameLabel] = deal( className );
+    [~, ~, className] = fileparts(instanceSpec); % Todo: Create utility function for short name.
+    [className, classNameLabel] = deal( extractAfter(className, ".") );
 
+    % Todo: Improve pluralisation or skip altogether
     if options.NumInstances > 1; classNameLabel = [className, 's']; end
 
     titleStr = sprintf('Create New %s', classNameLabel);
