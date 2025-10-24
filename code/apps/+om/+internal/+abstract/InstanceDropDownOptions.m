@@ -14,16 +14,15 @@ classdef InstanceDropDownOptions < handle
     end
 
     properties (AbortSet = true)
-        % MetadataType - The metadata type which is currently active/selected 
+        % MetadataType - The metadata type which is currently active/selected
         % in this component
         ActiveMetadataType (1,1) openminds.enum.Types = "None"
     end
 
-
     % Properties that corresponds with internal states
     properties (Access = private)
         % HasRemoteInstances - Boolean flag indicating whether dropdown is
-        % populated with remote instances (instances from a remote metadata 
+        % populated with remote instances (instances from a remote metadata
         % collection)
         HasRemoteInstances = false
 
@@ -34,8 +33,4 @@ classdef InstanceDropDownOptions < handle
 
         Actions (1,:) string
     end
-
-    
-
-
 end

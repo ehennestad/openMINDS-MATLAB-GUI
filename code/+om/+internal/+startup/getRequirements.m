@@ -17,7 +17,7 @@ function parsedRequirements = parseRequirements(requirements) % Needed?
     parsedRequirements = struct;
 
     for i = 1:numel(requirements)
-        
+
         if startsWith(requirements{i}, "fex://")
             type = 'FileExchange';
         elseif startsWith(requirements{i}, "https://github.com")
@@ -26,7 +26,7 @@ function parsedRequirements = parseRequirements(requirements) % Needed?
             type = 'Unknown';
             warning('Unsupported requirement specification: %s', requirements{i})
         end
-        
+
         parsedRequirements(i).Type = type;
         parsedRequirements(i).URI = string(requirements{i});
     end

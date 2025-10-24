@@ -42,12 +42,12 @@ classdef NCBITaxonSearch < om.internal.abstract.Action
                 return
             else
                 [name, ontologyIdentifier, synonym] = ndi.database.metadata_app.fun.getSpeciesInfo(uuid);
-                
+
                 newSpecies = openminds.controlledterms.Species(...
                     'name', name, ...
                     'preferredOntologyIdentifier', ontologyIdentifier, ...
                     'synonym', synonym);
-                
+
                 [metadataInstance, ~] = om.uiCreateNewInstance(newSpecies);
                 if ~isempty(metadataInstance)
                     wasSuccess = true;

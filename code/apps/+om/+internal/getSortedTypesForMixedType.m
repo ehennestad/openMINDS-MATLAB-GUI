@@ -1,5 +1,5 @@
 function typeClassNames = getSortedTypesForMixedType(mixedTypeClassName)
-% getSortedTypesForMixedType - Get a sorted list of class names for mixed type 
+% getSortedTypesForMixedType - Get a sorted list of class names for mixed type
 %
 %   Note: Sorting is based on a preferred order, not alphabetical
 
@@ -9,7 +9,7 @@ function typeClassNames = getSortedTypesForMixedType(mixedTypeClassName)
 
     schemaName = splitMixedTypeClassName{end-1};
     schemaName = openminds.internal.vocab.getSchemaName(schemaName);
-    
+
     propertyName = splitMixedTypeClassName{end};
 
     % Sort allowed types

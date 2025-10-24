@@ -1,5 +1,5 @@
 function preferredOrder = getPreferredPropertyOrder(openmindsType)
-    
+
     % Todo: Write a test that checks that the names in preferred order
     % matches the names in the instance
 
@@ -8,7 +8,7 @@ function preferredOrder = getPreferredPropertyOrder(openmindsType)
     if isempty(preferences)
         preferences = loadPreferences();
     end
-    
+
     shortName = openminds.internal.utility.getSchemaName(openmindsType);
 
     propertyNames = properties(feval(openmindsType));
@@ -21,9 +21,8 @@ function preferredOrder = getPreferredPropertyOrder(openmindsType)
 end
 
 function prefs = loadPreferences()
-    
+
     rootPath = om.internal.rootpath();
     filepath = fullfile(rootPath, 'config', 'preferredPropertyOrder.json');
     prefs = jsondecode( fileread( filepath ) );
-    
 end

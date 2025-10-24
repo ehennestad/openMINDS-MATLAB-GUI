@@ -7,7 +7,7 @@ classdef DetailedMetadataPage < wizard.abstract.Page
     end
 
     properties
-        %DataModel ndi.dataset.gui.models.DatasetInfo
+        % DataModel ndi.dataset.gui.models.DatasetInfo
     end
     properties (SetAccess = ?wizard.WizardApp)
         PageData
@@ -21,7 +21,6 @@ classdef DetailedMetadataPage < wizard.abstract.Page
         DatasetWidgets
     end
 
-    
     methods % Constructor
         function obj = DetailedMetadataPage()
             %obj.AppData = ndi.dataset.gui.models.DatasetInfo();
@@ -29,7 +28,7 @@ classdef DetailedMetadataPage < wizard.abstract.Page
     end
 
     methods (Access = protected)
-        
+
         function setPropertyValue(obj, propertyName, propertyValue)
             if ~isempty(obj.PageData)
                 obj.PageData.(propertyName) = propertyValue;
@@ -72,11 +71,9 @@ classdef DetailedMetadataPage < wizard.abstract.Page
 
             instance = feval( sprintf('openminds.core.%s', productName) );
             collection = openminds.Collection(instance);
-            
+
             SNew = om.convert.toStruct( instance, collection );
             obj.DatasetWidgets = structeditor.UIControlContainer(obj.GridLayout, SNew);
         end
     end
-
 end
-

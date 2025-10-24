@@ -9,7 +9,7 @@ classdef InstanceTypeButtonGroup < om.internal.abstract.TypeSelector
         UIButtons  (1,:) matlab.ui.control.StateButton
         UIGridLayout matlab.ui.container.GridLayout
     end
-            
+
     properties (Access = protected)
         UIComponent
     end
@@ -35,9 +35,9 @@ classdef InstanceTypeButtonGroup < om.internal.abstract.TypeSelector
             comp.createGridLayout
             comp.createButtons()
         end
-        
+
         function updateSelectedTypeInComponent(comp)
-            
+
             idx = find(strcmp({comp.UIButtons.Text}, comp.SelectedType));
 
             % Update button states if the selected type is not toggled.
@@ -46,7 +46,7 @@ classdef InstanceTypeButtonGroup < om.internal.abstract.TypeSelector
                 comp.UIButtons(idx).Value = 1;
             end
         end
-    
+
         function onSelectedTypeChangedInComponent(comp, src, evt)
             comp.onTypeSelectorButtonPushed(src, evt)
         end
@@ -72,7 +72,7 @@ classdef InstanceTypeButtonGroup < om.internal.abstract.TypeSelector
 
                 btn = uibutton(comp.UIGridLayout, "state", "Text", typeLabel);
                 btn.Tag = comp.Types(i).ClassName;
-                
+
                 btn.ValueChangedFcn = @comp.privateComponentCallback;
 
                 % Set the button layout to the i-th column
@@ -88,14 +88,14 @@ classdef InstanceTypeButtonGroup < om.internal.abstract.TypeSelector
     methods (Access = private)
 
         function onTypeSelectorButtonPushed(comp, src, ~)
-            
+
             % Loop through all buttons to toggle them off except the clicked one
             for i = 1:length(comp.UIButtons)
                 if comp.UIButtons(i) ~= src
                     comp.UIButtons(i).Value = false;
                 end
             end
-            
+
             % Toggle the clicked button
             src.Value = true;
 

@@ -1,15 +1,15 @@
 function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, typeURI, metadataCollection)
 
     % Todo: order of outputs should match uiCreateNewInstance...
-    
+
     % Assumes we are editing a property of a schema... Which should always
     % be the case for heterogeneous arrays...
-    
+
     typePathSplit = strsplit(typeURI, '/');
 
     schemaName = typePathSplit{end-1};
     propertyName = typePathSplit{end};
-    
+
     % Sometimes mixed types comes in as "homogeneous" types.
     metaSchema = openminds.internal.meta.Type( openminds.enum.Types(schemaName).ClassName );
     if metaSchema.isPropertyMixedType(propertyName)
@@ -18,11 +18,11 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
     end
 
     IS_SCALAR = metaSchema.isPropertyValueScalar(propertyName);
-    
+
     if nargin < 3
         metadataCollection = openminds.MetadataCollection();
     end
-        
+
     if iscell(metadataInstances); metadataInstances = [metadataInstances{:}]; end
 
     isHeterogeneous = isa(metadataInstances, 'openminds.internal.abstract.MixedTypeSet');
@@ -35,7 +35,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
     end
 
     title = sprintf( 'Edit %s for %s', propertyName, schemaName);
-    
+
     % Todo
     titleStr = om.internal.text.getEditorTitle(...
         "UpstreamInstanceType", schemaName, ...
@@ -46,7 +46,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
         if ~isa(structInstances, 'cell')
             structInstances = num2cell(structInstances);
         end
-    
+
         % Also: Get reference types...
         allTypes = om.internal.getSortedTypesForMixedType( class(metadataInstances) );
 
@@ -55,9 +55,9 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
             referenceItems(i).Type = allTypes{i};
             referenceItems(i).Data = om.convert.toStruct( feval(allTypes{i}), metadataCollection );
         end
-        
+
         referenceItems = structeditor.TypedStructArray({}, {referenceItems.Data}, allTypes);
-    
+
         editor = om.internal.window.HeterogeneousArrayEditor(structInstances, ...
             'ItemType', propertyName, ...
             'Title', title, ...
@@ -82,15 +82,15 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
     end
 
     uim.utility.centerFigureOnScreen(editor.UIFigure)
-    
+
     uiwait(editor, true)
-    
+
     if ~isvalid(editor) || editor.FinishState ~= "Finished"
         [itemNames, itemData] = deal([]);
     else
         % Heterogeneous...
         data = editor.Data;
-        
+
         if ~iscell(data)
             data = num2cell(data);
         end
@@ -109,7 +109,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
             iData = data{i};
             if isfield(iData, 'id') && ~isempty(iData.id)
                 % retrieve existing instance.
-                
+
                 if isempty(metadataInstances)
                     if contains(openmindsType, '.controlledterm')
                         iInstance = feval( openmindsType, iData.id );
@@ -146,12 +146,12 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
             end
         end
 
-        % Convert to openminds instances to get labels...    
+        % Convert to openminds instances to get labels...
         itemNames = cellfun(@(c) string(c), instances, 'UniformOutput', true);
 
         if isHeterogeneous
             mixedTypeName = class(metadataInstances);
-            %itemData = num2cell( feval(mixedTypeName, instances) );
+            % itemData = num2cell( feval(mixedTypeName, instances) );
             itemData = feval(mixedTypeName, instances);
         else
             itemData = instances;

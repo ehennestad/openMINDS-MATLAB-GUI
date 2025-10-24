@@ -1,5 +1,5 @@
 function tf = isMixedTypeClassName(className)
-    
+
     arguments
         className %(1,1) string
     end

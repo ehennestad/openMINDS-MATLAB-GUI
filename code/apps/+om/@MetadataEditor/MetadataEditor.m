@@ -1,5 +1,5 @@
 classdef MetadataEditor < handle
-%     
+%
 %   TODO:
 %       [x] Save figure size to app settings
 %       [x] Save metadata set
@@ -19,14 +19,13 @@ classdef MetadataEditor < handle
 %       [ ] Dynamic listbox on left side panel
 %
 %       [ ] Treat embedded types and linked types differently. Embedded
-%           types are not added to the set, but only added to schema 
+%           types are not added to the set, but only added to schema
 %           instances. Should embedded types be value classes.
 %
 %       [ ] Linked types are just links...
 
-
 % ABBREVIATIONS:
-%       
+%
 %       OM : openMinds
 %
 
@@ -72,21 +71,21 @@ classdef MetadataEditor < handle
     properties (Constant)
         METADATA_COLLECTION_FILENAME = 'metadata_collection.mat'
     end
-    
+
 % Create figure
 
     methods
 
         function obj = MetadataEditor(metadataCollection)
 
-            if nargin < 1            
+            if nargin < 1
                 obj.loadMetadataCollection()
             else
                 if isa(metadataCollection, 'openminds.Collection')
                     metadataCollection = om.ui.UICollection.fromCollection(metadataCollection);
                 end
                 obj.MetadataCollection = metadataCollection;
-                %obj.MetadataCollection.createListenersForAllInstances()
+                % obj.MetadataCollection.createListenersForAllInstances()
             end
 
             obj.createFigure()
@@ -130,9 +129,9 @@ classdef MetadataEditor < handle
             obj.Figure.CloseRequestFcn = @obj.onExit;
 
             obj.changeSelection('DatasetVersion')
-                       
+
             obj.configureFigureInteractionCallbacks()
-            
+
             if ~nargout
                 clear obj
             end
@@ -142,13 +141,13 @@ classdef MetadataEditor < handle
             % Save column view settings to project
             obj.saveMetatableColumnSettings()
             obj.saveTypeQuickSelection()
-            
+
 %             if isempty(app.MetaTable)
 %                 return
 %             end
-            
+
             isdeletable = @(x) ~isempty(x) && isvalid(x);
-            
+
             if isdeletable(obj.UIMetaTableViewer)
                 delete(obj.UIMetaTableViewer)
             end
@@ -169,10 +168,9 @@ classdef MetadataEditor < handle
 
             delete(obj)
         end
-
     end
 
-    methods %Set / get 
+    methods %Set / get
         function saveFolder = get.SaveFolder(~)
             % Todo: Get from preferences
             saveFolder = fullfile(userpath, 'openMINDS-MATLAB-UI', 'userdata');
@@ -190,12 +188,12 @@ classdef MetadataEditor < handle
                 newItems = [items, {schemaName}];
                 obj.createSchemaSelectorSidebar(newItems)
             end
-            
+
             obj.UISideBar.SelectedItems = schemaName;
         end
-        
+
         function updateLayoutPositions(obj)
-            
+
             figPosPix = getpixelposition(obj.Figure);
             W = figPosPix(3);
             H = figPosPix(4);
@@ -208,7 +206,7 @@ classdef MetadataEditor < handle
             logoH = round( logoW / 2 );
 
             obj.UIPanel.Toolbar.Position = [MARGIN,H-MARGIN-toolH,W-MARGIN*2,toolH];
-            
+
             h = H-MARGIN*2-toolH-PADDING;
             w = 150;
 
@@ -234,7 +232,7 @@ classdef MetadataEditor < handle
         function typeSelections = loadTypeQuickSelection(obj)
             rootDir = fileparts(mfilename('fullpath'));
             filename = fullfile(rootDir, 'type_selection.mat');
-            
+
             if isfile(filename)
                 S = load(filename, 'typeSelections');
                 typeSelections = S.typeSelections;
@@ -246,7 +244,7 @@ classdef MetadataEditor < handle
         function saveTypeQuickSelection(obj)
             rootDir = fileparts(mfilename('fullpath'));
             filename = fullfile(rootDir, 'type_selection.mat');
-            
+
             typeSelections = obj.UISideBar.Items;
             save(filename, 'typeSelections');
         end
@@ -257,14 +255,14 @@ classdef MetadataEditor < handle
             schemaName = obj.CurrentSchemaTableName;
             idx = obj.UIMetaTableViewer.getSelectedEntries();
             schemaInstance = obj.MetadataCollection.getSchemaInstanceByIndex(schemaName, idx);
-            
+
             varName = matlab.lang.makeValidName( schemaInstance.DisplayString );
             assignin('base', varName, schemaInstance)
         end
     end
 
     methods (Access = private) % App initialization and update methods
-        
+
         function windowPosition = getWindowPosition(~)
             if ispref('openMINDS', 'WindowSize')
                 windowPosition = getpref('openMINDS', 'WindowSize');
@@ -288,7 +286,7 @@ classdef MetadataEditor < handle
             obj.UIPanel.SidebarL = uipanel(obj.Figure);
             obj.UIPanel.Table = uipanel(obj.Figure);
             obj.UIPanel.Logo = uipanel(obj.Figure);
-            
+
             panels = struct2cell(obj.UIPanel);
             set([panels{:}], 'Units', 'pixels', 'BackgroundColor', 'w', 'BorderType','etchedin')
         end
@@ -303,7 +301,7 @@ classdef MetadataEditor < handle
 
             for i = 1:numel(obj.Pages)
                 pageName = obj.Pages{i};
-                
+
                 hTab = uitab(obj.UIContainer.TabGroup);
                 hTab.Title = pageName;
 
@@ -312,7 +310,7 @@ classdef MetadataEditor < handle
         end
 
         function createMainMenu(obj)
-            
+
             m = uimenu(obj.Figure, 'Text', 'openMINDS GUIDE');
             mItem = uimenu(m, 'Text', 'Select project type');
             L = recursiveDir( fullfile(om.internal.rootpath, 'config', 'template_projects'), 'Type','folder');
@@ -320,7 +318,7 @@ classdef MetadataEditor < handle
                 mSubItem = uimenu(mItem, "Text", L(i).name);
                 mSubItem.Callback = @obj.onProjectTypeSelected;
             end
-                       
+
             mItem = uimenu(m, 'Text', 'Select graph plot layout');
             layoutOptions = ["circle", "force", "layered", "subspace", "force3", "subspace3"];
             for i = 1:numel(layoutOptions)
@@ -334,7 +332,7 @@ classdef MetadataEditor < handle
             % Todo: Get model version from preferences...
             modelRoot = fullfile(openminds.internal.rootpath, 'types', 'latest', '+openminds');
             ignoreList = {'+controlledterms'};
-            
+
             omModels = recursiveDir(modelRoot, "Type", "folder", "IgnoreList", ignoreList, ...
                 "RecursionDepth", 1, "OutputType", "FilePath");
 
@@ -343,7 +341,7 @@ classdef MetadataEditor < handle
         end
 
         function createCreateNewButton(obj)
-            
+
             obj.UIButtonCreateNew = uicontrol(obj.UIPanel.CreateNew, 'Style', 'pushbutton');
             obj.UIButtonCreateNew.String = "Create New";
             obj.UIButtonCreateNew.Callback = @obj.onCreateNewButtonPressed;
@@ -352,32 +350,32 @@ classdef MetadataEditor < handle
             obj.UIButtonCreateNew.FontWeight = 'bold';
             obj.UIButtonCreateNew.FontSize = 14;
 
-            %obj.UIButtonCreateNew.BackgroundColor = [0,231,102]/255;
+            % obj.UIButtonCreateNew.BackgroundColor = [0,231,102]/255;
             obj.UIPanel.CreateNew.BorderType = 'none';
             obj.UIPanel.CreateNew.BackgroundColor = obj.Figure.Color;
         end
-        
+
         function createSchemaSelectorSidebar(obj, schemaTypes)
         %createSchemaSelectorSidebar Create a selector widget in side panel
 
             if nargin < 2 || (isstring(schemaTypes) && schemaTypes=="")
                 schemaTypes = {'DatasetVersion'};
             end
-                        
+
             sideBar = om.gui.control.ListBox(obj.UIPanel.SidebarL, schemaTypes);
             sideBar.SelectionChangedFcn = @obj.onSelectionChanged;
             obj.UISideBar = sideBar;
         end
-        
+
         function initializeTableViewer(obj)
 
             columnSettings = obj.loadMetatableColumnSettings();
             nvPairs = {'ColumnSettings', columnSettings, 'TableFontSize', 8};
-            
+
             % Need to ensure a nansen user session is active before
             % creating meta table viewer. Todo: Should not be necessary
             nansen.internal.user.NansenUserSession.instance();
-            
+
             h = nansen.MetaTableViewer( obj.UIContainer.UITab(1), [], nvPairs{:});
             h.HTable.KeyPressFcn = @obj.onKeyPressed;
             obj.UIMetaTableViewer = h;
@@ -385,7 +383,7 @@ classdef MetadataEditor < handle
             colSettings = h.ColumnSettings;
             [colSettings(:).IsEditable] = deal(true);
             h.ColumnSettings = colSettings;
-            %obj.UIMetaTableViewer.HTable.Units
+            % obj.UIMetaTableViewer.HTable.Units
 
             h.CellEditCallback = @obj.onMetaTableDataChanged;
             h.GetTableVariableAttributesFcn = @obj.createTableVariableAttributes;
@@ -399,8 +397,8 @@ classdef MetadataEditor < handle
         end
 
         function plotOpenMindsLogo(obj)
-        %plotLogo Plot openMINDS logo in the logo panel   
-            
+        %plotLogo Plot openMINDS logo in the logo panel
+
             % Load the logo from file
             logoFilename = 'light_openMINDS-logo.png';
             logoFilename = om.MetadataEditor.getLogoFilepath();
@@ -427,18 +425,16 @@ classdef MetadataEditor < handle
         end
 
         function configureFigureInteractionCallbacks(obj)
-            
-            %obj.Figure.WindowButtonDownFcn = @obj.onMousePressed;
-            %obj.Figure.WindowButtonMotionFcn = @obj.onMouseMotion;
-            obj.Figure.WindowKeyPressFcn = @obj.onKeyPressed;
-            %obj.Figure.WindowKeyReleaseFcn = @obj.onKeyReleased;
-            
-            %[~, hJ] = evalc('findjobj(obj.Figure)');
-            %hJ(2).KeyPressedCallback = @obj.onKeyPressed;
-            %hJ(2).KeyReleasedCallback = @obj.onKeyReleased;
-            
-        end
 
+            % obj.Figure.WindowButtonDownFcn = @obj.onMousePressed;
+            % obj.Figure.WindowButtonMotionFcn = @obj.onMouseMotion;
+            obj.Figure.WindowKeyPressFcn = @obj.onKeyPressed;
+            % obj.Figure.WindowKeyReleaseFcn = @obj.onKeyReleased;
+
+            % [~, hJ] = evalc('findjobj(obj.Figure)');
+            % hJ(2).KeyPressedCallback = @obj.onKeyPressed;
+            % hJ(2).KeyReleasedCallback = @obj.onKeyReleased;
+        end
     end
 
     methods (Access = private) % Metadata Collection configuration methods
@@ -447,20 +443,19 @@ classdef MetadataEditor < handle
 
             addlistener(obj.MetadataCollection, 'CollectionChanged', @obj.onMetadataCollectionChanged);
             addlistener(obj.MetadataCollection, 'InstanceModified', @obj.onMetadataInstanceModified);
-
         end
 
         function filepath = getMetadataCollectionFilepath(obj)
             filepath = fullfile(obj.SaveFolder, obj.METADATA_COLLECTION_FILENAME);
         end
-        
+
         function saveMetadataCollection(obj)
             metadataFilepath = obj.getMetadataCollectionFilepath();
-            
-            % Todo: Serialize
-            %S = struct;
 
-            MetadataCollection = obj.MetadataCollection; %#ok<PROP> 
+            % Todo: Serialize
+            % S = struct;
+
+            MetadataCollection = obj.MetadataCollection; %#ok<PROP>
             save(metadataFilepath, 'MetadataCollection')
             % Todo: Are listeners saved???
         end
@@ -470,33 +465,29 @@ classdef MetadataEditor < handle
             if isfile(metadataFilepath)
                 S = load(metadataFilepath, 'MetadataCollection');
                 obj.MetadataCollection = S.MetadataCollection;
-                %obj.MetadataCollection.createListenersForAllInstances()
+                % obj.MetadataCollection.createListenersForAllInstances()
             else
                 obj.MetadataCollection = om.ui.UICollection();
             end
 
-
 % % %             % Reattach listeners
 % % %             addlistener(obj.MetadataCollection, 'CollectionChanged', ...
 % % %                 @obj.onMetadataCollectionChanged)
-
         end
 
         function saveGraphCoordinates(obj)
             % Todo.
         end
-
     end
 
     methods (Access = private) % Internal callback methods
-        
+
         function onKeyPressed(obj, ~, evt)
 
             switch evt.Key
                 case 'x'
                     obj.exportToWorkspace()
             end
-
         end
 
         function onMetaTableDataChanged(obj, ~, evt)
@@ -509,7 +500,7 @@ classdef MetadataEditor < handle
             % Update column layout.
 
             % Todo: Update column format for individual column
-            
+
             % NB: Indices are for the table model
             propName = obj.UIMetaTableViewer.MetaTable.Properties.VariableNames{evt.Indices(2)};
 
@@ -518,7 +509,7 @@ classdef MetadataEditor < handle
         end
 
         function onSelectionChanged(obj, ~, evt)
-            
+
             selectedTypes = evt.NewSelection;
             obj.CurrentSchemaTableName = selectedTypes;
 
@@ -576,7 +567,7 @@ classdef MetadataEditor < handle
             % userfriendly, the alias version of the schemas are used.
             functionNameSplit = strsplit(functionName, '.');
             if numel(functionNameSplit)==4
-                %functionName = strjoin(functionNameSplit([1,2,4]), '.');
+                % functionName = strjoin(functionNameSplit([1,2,4]), '.');
             end
 
             switch selectionMode
@@ -593,7 +584,7 @@ classdef MetadataEditor < handle
                     open(functionName)
                 case 'View'
                     schemaType = functionNameSplit{end};
-                    %obj.UISideBar.Items = schemaType;
+                    % obj.UISideBar.Items = schemaType;
                     obj.changeSelection(schemaType)
                     return
             end
@@ -618,14 +609,14 @@ classdef MetadataEditor < handle
             om.uiCreateNewInstance(type.ClassName, obj.MetadataCollection, "NumInstances", 1)
 
             % Todo: update tables...!
-            %obj.changeSelection(string(type))
+            % obj.changeSelection(string(type))
         end
-        
+
         function onMetadataCollectionChanged(obj, ~, ~)
-            
+
             G = obj.MetadataCollection.graph;
             obj.UIGraphViewer.updateGraph(G);
-            
+
             [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
             obj.CurrentTableInstanceIds = ids;
             obj.updateUITable(T)
@@ -645,22 +636,22 @@ classdef MetadataEditor < handle
 
             % Todo: Make sure this is name and not label.
             type = obj.CurrentSchemaTableName;
-             
+
             % Todo: Support removing multiple instances.
             instanceID = obj.CurrentTableInstanceIds(selectedIdx);
             for i = 1:numel(instanceID)
                 obj.MetadataCollection.remove(instanceID{i})
             end
 
-            %obj.MetadataCollection.removeInstance(type, selectedIdx)
+            % obj.MetadataCollection.removeInstance(type, selectedIdx)
 
             [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
             obj.updateUITable(T)
             obj.CurrentTableInstanceIds = ids;
-            %app.MetaTable.removeEntries(selectedEntries)
-            %app.UiMetaTableViewer.refreshTable(app.MetaTable)
+            % app.MetaTable.removeEntries(selectedEntries)
+            % app.UiMetaTableViewer.refreshTable(app.MetaTable)
         end
-    
+
         function onMouseDoubleClickedInTable(obj, ~, evt)
         % onMouseDoubleClickedInTable - Callback for double clicks
         %
@@ -669,7 +660,7 @@ classdef MetadataEditor < handle
 
             thisRow = evt.Cell(1); % Clicked row index
             thisCol = evt.Cell(2); % Clicked column index
-            
+
             if thisRow == 0 || thisCol == 0
                 return
             end
@@ -677,10 +668,10 @@ classdef MetadataEditor < handle
             % Get name of column which was clicked
             thisColumnName = obj.UIMetaTableViewer.getColumnNames(thisCol);
 
-            % Use table variable attributes to check if a double click 
+            % Use table variable attributes to check if a double click
             % callback function exists for the current table column
             TVA = obj.UIMetaTableViewer.MetaTableVariableAttributes([obj.UIMetaTableViewer.MetaTableVariableAttributes.HasDoubleClickFunction]);
-            
+
             isMatch = strcmp(thisColumnName, {TVA.Name});
 
             if any( isMatch )
@@ -696,14 +687,14 @@ classdef MetadataEditor < handle
                         if iscell(itemsData); itemsData = [itemsData{:}]; end
                         instance.(thisColumnName) = itemsData;
                         newValueStr = strjoin(items, '; ');
-                           
+
                         % TODO: Method of metatable viewer:
-                        %thisColIdxView = find(strcmp(obj.UIMetaTableViewer.getColumnNames, thisColumnName));
+                        % thisColIdxView = find(strcmp(obj.UIMetaTableViewer.getColumnNames, thisColumnName));
                         thisColIdxView = find(strcmp(obj.UIMetaTableViewer.MetaTable.Properties.VariableNames, thisColumnName));
 
                         obj.UIMetaTableViewer.updateCells(thisRow, thisColIdxView, {newValueStr})
                     end
-                    %keyboard
+                    % keyboard
 
                 else
                     error('Not supported')
@@ -713,7 +704,6 @@ classdef MetadataEditor < handle
                 evt.HitObject.JTable.editCellAt(thisRow-1, thisCol-1);
             end
         end
-    
     end
 
     methods (Access = private) % Internal updating
@@ -721,18 +711,18 @@ classdef MetadataEditor < handle
         function updateUITable(obj, metaTable)
 
             if ~isempty(metaTable)
-                %obj.UIMetaTableViewer.resetTable()
+                % obj.UIMetaTableViewer.resetTable()
                 obj.UIMetaTableViewer.refreshTable(metaTable, true)
             else
                 obj.UIMetaTableViewer.resetTable()
                 obj.UIMetaTableViewer.refreshTable(table.empty, true)
             end
         end
-        
+
         function tableVariableAttributes = createTableVariableAttributes(obj, metaTableType)
 
             import nansen.metadata.abstract.TableVariable;
-            
+
             metaTable = obj.UIMetaTableViewer.MetaTable;
             if ~isempty(metaTable)
 
@@ -740,18 +730,16 @@ classdef MetadataEditor < handle
                 numVars = numel(varNames);
                 S = TableVariable.getDefaultTableVariableAttribute();
                 S = repmat(S, 1, numVars);
-                
+
                 % Fill out names and table type
                 [S(1:numVars).Name] = varNames{:};
                 [S(1:numVars).TableType] = deal(string(metaTableType));
                 [S(1:numVars).IsEditable] = deal( false );
 
                 openMindsType = openminds.enum.Types(metaTableType);
-                instance = feval(openMindsType.ClassName);  
-                    
+                instance = feval(openMindsType.ClassName);
 
                 metaSchema = openminds.internal.meta.Type( instance );
-
 
                 for i = 1:numel(varNames)
                     if openminds.utility.isInstance( instance.(varNames{i}) ) && ...
@@ -762,7 +750,7 @@ classdef MetadataEditor < handle
                             S(i).OptionsList = {{'<Select>', '<Create>', '<Download>'}}; % Todo
                         else
                             propertyTypeName = instance.X_TYPE + "/" + varNames{i};
-    
+
                             S(i).IsEditable = false;
                             S(i).HasDoubleClickFunction = true;
                             S(i).DoubleClickFunctionName = @(value, varargin) ...
@@ -792,21 +780,21 @@ classdef MetadataEditor < handle
         function deleteMetadataCollection()
             saveFolder = fullfile(userpath, 'openMINDS', 'userdata');
             metadataFilepath = fullfile(saveFolder, om.MetadataEditor.METADATA_COLLECTION_FILENAME);
-            
+
             if isfile(metadataFilepath)
                 delete(metadataFilepath)
             end
         end
-    
+
         function tf = isSchemaInstanceUnavailable(value)
             tf = ~isempty(regexp(value, 'No \w* available', 'once'));
         end
 
         function [CData, AlphaData] = loadOpenMindsLogo()
-            
+
             % Load the logo from file
             logoFilename = om.MetadataEditor.getLogoFilepath();
-            
+
             if ~exist(logoFilename, 'file')
                 fprintf('Downloading openMINDS logo...'); fprintf(newline)
                 obj.downloadOpenMindsLogo()
@@ -824,7 +812,7 @@ classdef MetadataEditor < handle
         function logoFilepath = getLogoFilepath()
             logoUrl = om.common.constant.OpenMindsLogoLightURL;
             logoURI = matlab.net.URI(logoUrl);
-            
+
             % Download logo
             thisFullpathSplit = pathsplit( mfilename("fullpath") );
             fileName = logoURI.Path(end);

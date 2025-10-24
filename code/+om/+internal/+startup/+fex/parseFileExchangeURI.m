@@ -7,7 +7,7 @@ function [packageUuid, version] = parseFileExchangeURI(uri)
     version = "latest"; % Initialize default value
 
     FEX_API_URL = "https://addons.mathworks.com/registry/v1/";
-    
+
     splitUri = strsplit(uri, '/');
 
     packageNumber = regexp(splitUri{2}, '\d*(?=-)', 'match', 'once');

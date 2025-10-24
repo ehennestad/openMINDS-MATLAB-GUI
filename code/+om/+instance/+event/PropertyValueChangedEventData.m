@@ -1,6 +1,6 @@
 classdef PropertyValueChangedEventData < event.EventData
 %PropertyValueChangedEventData Event data for change of property value of instance
-    
+
     properties
         NewValue
         OldValue

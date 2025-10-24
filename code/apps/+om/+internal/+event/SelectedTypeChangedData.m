@@ -1,10 +1,10 @@
 classdef SelectedTypeChangedData < event.EventData
     % This class is for the event data of 'SelectedTypeChanged' events
-        
+
     properties(SetAccess = 'private')
         SelectedType
     end
-    
+
     methods
         function obj = SelectedTypeChangedData(selectedType)
             arguments
@@ -14,4 +14,3 @@ classdef SelectedTypeChangedData < event.EventData
         end
     end
 end
-

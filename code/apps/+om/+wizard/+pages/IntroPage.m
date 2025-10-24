@@ -1,6 +1,5 @@
 classdef IntroPage < wizard.abstract.Page
 
-
     properties (Constant)
         Name = "Intro"
         Title = "Welcome"
@@ -10,14 +9,13 @@ classdef IntroPage < wizard.abstract.Page
             "  1. Select research product\n" + ...
             "  2. Initialize metadata collection\n" + ...
             "  3. Add metadata" ]
-
     end
 
     properties (Access = private) % App components
         GridLayout
         StartButton
     end
-    
+
     methods
         function obj = IntroPage()
             obj.ShowNavigationButtons = false;
@@ -43,8 +41,8 @@ classdef IntroPage < wizard.abstract.Page
             obj.GridLayout.ColumnWidth = {'1x', 150, '1x'};
             obj.GridLayout.RowHeight = {'2x', 50, '1x'};
             obj.GridLayout.Padding = 0;
-            %obj.GridLayout.Layout.Row = 3;
-            %obj.GridLayout.Layout.Column = 1;
+            % obj.GridLayout.Layout.Row = 3;
+            % obj.GridLayout.Layout.Column = 1;
             obj.GridLayout.BackgroundColor = obj.ParentApp.BodyGridLayout.BackgroundColor;
 
             obj.StartButton = uibutton( obj.GridLayout, 'push' );
@@ -56,13 +54,10 @@ classdef IntroPage < wizard.abstract.Page
             obj.StartButton.FontColor = "white";
             obj.StartButton.FontSize = 16;
             obj.StartButton.Text = "Get Started";
-
         end
 
         function changePage(obj)
             obj.ParentApp.changeWizardPage([], 2)
         end
     end
-
-
 end

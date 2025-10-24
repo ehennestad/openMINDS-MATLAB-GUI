@@ -1,10 +1,10 @@
 classdef InheritableBackgroundColor < handle
-    
+
     properties (Access = private)
         BindablePropertyListener event.listener
         LinkObject
     end
-    
+
     methods (Access = protected)
         function activateBackgroundColorInheritance(comp)
             isValidComponent = isa(comp, 'matlab.ui.componentcontainer.ComponentContainer');
@@ -14,7 +14,7 @@ classdef InheritableBackgroundColor < handle
             if isempty(comp.BindablePropertyListener)
                 comp.BindablePropertyListener = listener(comp.Parent, ...
                     'BindablePropertyChanged', @comp.onParentPropertyChanged);
-                                
+
                 comp.updateBackgroundColor()
             end
         end
@@ -32,7 +32,7 @@ classdef InheritableBackgroundColor < handle
             end
             comp.updateBackgroundColor()
         end
-        
+
         function removeBackgroundColorLinkTargets(comp, target)
             if isempty(comp.LinkObject)
                 error('This component does not have a property link');

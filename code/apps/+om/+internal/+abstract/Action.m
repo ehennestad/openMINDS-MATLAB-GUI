@@ -1,5 +1,5 @@
 classdef Action < handle
-    
+
     properties (Abstract, Constant)
         Name (1,1) string
         Description (1,1) string
@@ -21,7 +21,7 @@ classdef Action < handle
     properties (GetAccess = protected)
         AncestorFigure matlab.ui.Figure
         ParentComponent
-        %MetadataCollection
+        % MetadataCollection
     end
 
     methods (Abstract)
@@ -44,7 +44,7 @@ classdef Action < handle
             vowels = 'aeiouy';
             typeLabel = char(typeLabel);
             startsWithVowel = any( lower(typeLabel(1)) == vowels );
-            
+
             label = obj.LabelTemplate;
             label = strrep(label, 'instance', sprintf('%s instance', lower(typeLabel)));
             if startsWithVowel
@@ -52,10 +52,10 @@ classdef Action < handle
                 label = strrep(label, ' a ', ' an ');
             end
 
-            %label = strrep(label, ' instances', '');
-            %label = strrep(label, ' instance', '');
+            % label = strrep(label, ' instances', '');
+            % label = strrep(label, ' instance', '');
         end
-    
+
         function set.MetadataType(obj, value)
             obj.validateMetadataType(value)
             obj.MetadataType = value;
@@ -64,12 +64,11 @@ classdef Action < handle
 
     methods (Access = protected)
         function throwUiError(obj, errorMessage, errorTitle)
-            if ~isempty(obj.AncestorFigure)                
+            if ~isempty(obj.AncestorFigure)
                 uialert(obj.AncestorFigure, errorMessage, errorTitle);
             else
                 errordlg(errorMessage, errorTitle)
             end
         end
     end
-
 end

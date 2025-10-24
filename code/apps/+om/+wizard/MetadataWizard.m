@@ -8,7 +8,6 @@ classdef MetadataWizard < wizard.WizardApp
 % necessary for a dataset. It has subfields that represents specific
 % models, and these models are assigned to pages.
 
-
     properties (SetAccess = private)
         AppData = struct % Todo
         Preferences  % Todo
@@ -55,7 +54,7 @@ classdef MetadataWizard < wizard.WizardApp
                 app.DatasetRootDirectory = datasetFolder;
             end
 
-            %app.loadPreferences()
+            % app.loadPreferences()
             app.LogoImage.Layout.Row = [1,2];
 
             if ~nargout; clear app; end
@@ -80,21 +79,21 @@ classdef MetadataWizard < wizard.WizardApp
                     app.onDaqSystemsPageCreated( pageObject )
             end
         end
-    
+
         function doAbort = onFigureCloseRequest(app, ~)
-            
+
             app.promptSaveCurrentChanges()
             app.savePreferences()
             doAbort = false;
         end
-    
+
         function loadTheme(app)
             app.Theme = ndi.dataset.gui.WizardTheme();
         end
     end
 
     methods (Access = private) % Page created callbacks
-        
+
         % Dataset Page: Page created callback
         function onDatasetPageCreated(app, pageObject)
             if ~ismissing(app.DatasetRootDirectory)
@@ -107,7 +106,7 @@ classdef MetadataWizard < wizard.WizardApp
         function onFolderOrganizationPageCreated(app, pageObject)
             referencePage = app.getPage("Create Dataset");
             pageObject.RootDirectory = referencePage.DatasetRootPath;
-            %pageObject.PresetFolderModels = app.PresetFolderModels.keys();
+            % pageObject.PresetFolderModels = app.PresetFolderModels.keys();
         end
 
         function onDaqSystemsPageCreated(app, pageObject)
@@ -142,7 +141,7 @@ classdef MetadataWizard < wizard.WizardApp
         end
     end
 
-    methods (Access = private) 
+    methods (Access = private)
         function promptSaveCurrentChanges(app)
             % Todo: Check if there are changes before asking to save changes...
             return
@@ -166,7 +165,7 @@ classdef MetadataWizard < wizard.WizardApp
     end
 
     methods % Save/load preferences
-        
+
         function loadPreferences(app)
             app.Preferences = ndi.dataset.gui.Preferences.load( class(app), fullfile('ndi', 'dataset_wizard'));
             app.UIFigure.Position = app.Preferences.Position;
@@ -174,11 +173,11 @@ classdef MetadataWizard < wizard.WizardApp
             referencePage = app.getPage("Create Dataset");
             referencePage.DatasetRootPathLog = app.Preferences.DatasetFolderHistory;
         end %loadPreferences
-        
+
         function savePreferences(app)
             return
             app.Preferences.Position = app.UIFigure.Position;
-            
+
             referencePage = app.getPage("Create Dataset");
             if referencePage.IsInitialized
                 app.Preferences.DatasetFolderHistory = referencePage.DatasetRootPathLog;
@@ -187,5 +186,4 @@ classdef MetadataWizard < wizard.WizardApp
             app.Preferences.save(class(app), fullfile('ndi', 'dataset_wizard'));
         end %savePreferences
     end
-
 end

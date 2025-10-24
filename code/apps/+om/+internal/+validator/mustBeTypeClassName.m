@@ -1,5 +1,5 @@
 function mustBeTypeClassName(className)
-% mustBeTypeClassName - Validator to check that a value is the class name 
+% mustBeTypeClassName - Validator to check that a value is the class name
 % of an openminds metadata type
 
     arguments
@@ -12,10 +12,10 @@ function mustBeTypeClassName(className)
     if any(strcmp(className, typeNames))
         return
     end
-    
+
     assert( startsWith(className, "openminds."), ...
         'Class name for openMINDS types must start with "openminds."' )
-    
+
     mc = meta.class.fromName(className);
 
     assert( ~isempty(mc), ...

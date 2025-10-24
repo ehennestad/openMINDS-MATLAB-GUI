@@ -10,7 +10,7 @@ function plotModuleGraph(moduleName)
     arguments
         moduleName (1,1) openminds.enum.Modules = "core"
     end
-    
+
     G = om.internal.graph.generateGraph(moduleName);
     om.internal.graphics.InteractiveOpenMINDSPlot(G)
 end

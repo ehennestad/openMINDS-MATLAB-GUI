@@ -2,7 +2,7 @@ classdef TypeSelector < handle & matlab.mixin.SetGet
 % TypeSelector Provides an abstract class for a component to select openMINDS types
 
 % For subclass implementations:
-%   1) Implement abstract methods: 
+%   1) Implement abstract methods:
 %       - createComponent
 %       - updateSelectedTypeInComponent
 %       - onSelectedTypeChangedInComponent
@@ -15,8 +15,8 @@ classdef TypeSelector < handle & matlab.mixin.SetGet
     end
 
     properties (AbortSet)
-        % SelectedType - The currently selected type 
-        SelectedType (1,1) openminds.enum.Types 
+        % SelectedType - The currently selected type
+        SelectedType (1,1) openminds.enum.Types
     end
 
     properties
@@ -30,11 +30,11 @@ classdef TypeSelector < handle & matlab.mixin.SetGet
     properties (Access = protected)
         Parent % Graphical parent container
     end
-    
+
     properties (Abstract, Access = protected)
         UIComponent
     end
-    
+
     % Constructor
     methods
         function obj = TypeSelector(hParent, options)
@@ -75,7 +75,7 @@ classdef TypeSelector < handle & matlab.mixin.SetGet
 
     methods (Abstract, Access = protected)
         createComponent(obj)
-        
+
         % This method should update the selection in the component if the
         % component was updated programmatically, i.e when the SelectedType
         % property is set
@@ -95,7 +95,7 @@ classdef TypeSelector < handle & matlab.mixin.SetGet
             obj.notifySelectedTypeChanged()
         end
     end
-    
+
     % Set methods for properties
     methods
         function set.SelectedType(obj, value)
@@ -104,7 +104,7 @@ classdef TypeSelector < handle & matlab.mixin.SetGet
             obj.postSetSelectedType()
         end
     end
-    
+
     % Postset methods for properties
     methods (Access = private)
         function postSetSelectedType(obj)
@@ -119,7 +119,7 @@ classdef TypeSelector < handle & matlab.mixin.SetGet
         % validateActiveType - Validate value for ActiveType property
 
             isValid = any( obj.Types == value );
-            
+
             errorMessage = sprintf('Selected type must be any of: %s', ...
                     strjoin(string(obj.Types), ', '));
 

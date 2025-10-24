@@ -1,5 +1,5 @@
 function title = getEditorTitle(options)
-    
+
     arguments
         options.InstanceType (1,1) string = missing
         options.UpstreamInstanceType (1,1) string = missing

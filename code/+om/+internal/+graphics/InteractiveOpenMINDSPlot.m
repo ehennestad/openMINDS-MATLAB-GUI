@@ -22,7 +22,7 @@ classdef InteractiveOpenMINDSPlot < handle
     properties (Access = protected) % data
         DirectedGraph
     end
-   
+
     properties (Access = protected) % graphical
         Axes
         GraphPlot
@@ -38,7 +38,7 @@ classdef InteractiveOpenMINDSPlot < handle
 
     methods
         function obj = InteractiveOpenMINDSPlot(graphObj, hAxes, ~)
-            
+
             obj.DirectedGraph = graphObj;
 
             if nargin >= 2
@@ -53,8 +53,8 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.GraphPlot.ButtonDownFcn = ...
                 @(s,e) obj.NodeTransporter.startDrag(s,e);
 
-            %obj.GraphPlot.EdgeLabel = e;
-    
+            % obj.GraphPlot.EdgeLabel = e;
+
             obj.Axes.YDir = 'normal';
             hFigure = ancestor(obj.Axes, 'figure');
             obj.PointerManager = uim.interface.pointerManager(hFigure, ...
@@ -65,7 +65,7 @@ classdef InteractiveOpenMINDSPlot < handle
 
             obj.MouseMotionListener = listener(hFigure, "WindowMouseMotion", ...
                 @obj.onWindowMouseMotion);
-            %obj.Axes.YDir = 'reverse';
+            % obj.Axes.YDir = 'reverse';
         end
     end
 
@@ -85,20 +85,20 @@ classdef InteractiveOpenMINDSPlot < handle
             delete( obj.GraphPlot )
             hold(obj.Axes, 'off')
 
-            %obj.DirectedGraph.Nodes.Name = arrayfun(@(x) num2str(x), 1:height(obj.DirectedGraph.Nodes), 'UniformOutput', false)';
-            %obj.GraphPlot = plot(obj.Axes, graphObj, 'Layout', 'force');
+            % obj.DirectedGraph.Nodes.Name = arrayfun(@(x) num2str(x), 1:height(obj.DirectedGraph.Nodes), 'UniformOutput', false)';
+            % obj.GraphPlot = plot(obj.Axes, graphObj, 'Layout', 'force');
             obj.GraphPlot = plot(obj.Axes, obj.DirectedGraph, 'Layout', obj.Layout);
-            %obj.GraphPlot.NodeLabel = obj.DirectedGraph.Nodes.Name;
+            % obj.GraphPlot.NodeLabel = obj.DirectedGraph.Nodes.Name;
             obj.GraphPlot.NodeLabel = [];
             numNodes = obj.DirectedGraph.numnodes;
             colors = colormap(obj.ColorMap);
-            
+
             randIdx = round(randperm(numNodes, numNodes)/numNodes*256);
-    
+
             nodeIds = obj.DirectedGraph.Nodes.Name;
             nodeTypes = obj.DirectedGraph.Nodes.Type;
             isInstances = ~startsWith(nodeIds, 'https');
-            
+
             uniqueInstanceTypes = unique(nodeTypes);
             uniqueIdx = round(linspace(1,256,numel(uniqueInstanceTypes)));
 
@@ -108,15 +108,15 @@ classdef InteractiveOpenMINDSPlot < handle
             end
 
             obj.GraphPlot.NodeColor = colors(randIdx, :);
-            
+
             obj.GraphPlot.MarkerSize = obj.MarkerSize;
             obj.GraphPlot.LineWidth = 1;
             obj.GraphPlot.EdgeColor = ones(1, 3)*0.6;
-            
+
             hold(obj.Axes, 'on')
             obj.Axes.XLim = obj.Axes.XLim;
             obj.Axes.YLim = obj.Axes.YLim;
-            %obj.Axes.Units = 'pixel';
+            % obj.Axes.Units = 'pixel';
 
             obj.GraphPlot.NodeFontName = 'avenir';
             obj.GraphPlot.NodeFontSize = 10;
@@ -133,7 +133,7 @@ classdef InteractiveOpenMINDSPlot < handle
             wasCaptured = obj.PointerManager.onKeyPress([], event);
         end
     end
-    
+
     methods (Access = private)
         function plotMouseOverElements(obj)
             obj.DataTip = text(obj.Axes, 0,0,'', ...
@@ -142,7 +142,7 @@ classdef InteractiveOpenMINDSPlot < handle
                 'PickableParts', 'none', ...
                 'Interpreter', 'none');
             uistack(obj.DataTip, 'top');
-            
+
             obj.ActiveNode = plot(obj.Axes, nan, nan, 'o', ...
                 'HitTest', 'off', ...
                 'PickableParts', 'none', ...
@@ -158,33 +158,33 @@ classdef InteractiveOpenMINDSPlot < handle
 
             h = hittest();
             if isa(h, 'matlab.graphics.chart.primitive.GraphPlot')
-                
+
                 point = src.CurrentPoint;
                 x = point(1); y = point(2);
-                
+
                 axesPosition = getpixelposition(obj.Axes,true);
                 x = x - axesPosition(1);
                 y = y - axesPosition(2);
-        
+
                 numAxUnitPerPixelX = diff(obj.Axes.XLim) / axesPosition(3);
                 numAxUnitPerPixelY = diff(obj.Axes.YLim) / axesPosition(4);
 
                 xAxesUnit = x * numAxUnitPerPixelX + obj.Axes.XLim(1) ;
                 yAxesUnit = y * numAxUnitPerPixelY + obj.Axes.YLim(1);
-                
+
                 % Find Node Index
                 graphObj = obj.GraphPlot;
-                %graphObj.XData
+                % graphObj.XData
                 deltaX = diff(obj.Axes.XLim) / axesPosition(3) * 10;
                 deltaY = diff(obj.Axes.YLim) / axesPosition(4) * 10;
-    
+
                 isOnX = abs( graphObj.XData - xAxesUnit ) < deltaX;
                 isOnY = abs( graphObj.YData - yAxesUnit ) < deltaY;
-    
+
                 nodeIdx = find( isOnX & isOnY, 1, 'first');
 
                 if ~isempty(nodeIdx)
-                    %disp(obj.DirectedGraph.Nodes.Name(nodeIdx))
+                    % disp(obj.DirectedGraph.Nodes.Name(nodeIdx))
                     obj.DataTip.Position = [xAxesUnit, yAxesUnit];
                     obj.DataTip.String = sprintf('%s (%s)', ...
                         obj.DirectedGraph.Nodes.Label{nodeIdx}, ...
@@ -197,7 +197,7 @@ classdef InteractiveOpenMINDSPlot < handle
                     obj.ActiveNode.YData = nan;
                 end
             else
-                %obj.DataTip.String = '';
+                % obj.DataTip.String = '';
             end
         end
 

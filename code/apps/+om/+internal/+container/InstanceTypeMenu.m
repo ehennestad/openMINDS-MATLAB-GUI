@@ -5,11 +5,10 @@ classdef InstanceTypeMenu < handle & matlab.mixin.SetGet
 %   types as options. Note: Types must be set upon creation of the menu
 %
 %   Example usage:
-% 
+%
 %   om.internal.container.InstanceTypeMenu(hFigure,
 %       Types=["Person", "Organization"], ...
 %       SelectedType="Person" )
-
 
     properties (SetAccess = immutable)
         % Types - A list of types to select from (options)
@@ -17,8 +16,8 @@ classdef InstanceTypeMenu < handle & matlab.mixin.SetGet
     end
 
     properties (AbortSet)
-        % SelectedType - The currently selected type 
-        SelectedType (1,1) openminds.enum.Types 
+        % SelectedType - The currently selected type
+        SelectedType (1,1) openminds.enum.Types
     end
 
     properties
@@ -28,11 +27,11 @@ classdef InstanceTypeMenu < handle & matlab.mixin.SetGet
         % object. See: om.internal.event.SelectedTypeChangedData
         SelectionChangedFcn
     end
-    
+
     properties (Access = private)
         UIContextMenu
     end
-    
+
     % Constructor
     methods
         function obj = InstanceTypeMenu(hFigure, options)
@@ -51,14 +50,14 @@ classdef InstanceTypeMenu < handle & matlab.mixin.SetGet
             obj.set(options)
         end
     end
-    
+
     % Public methods
     methods
         function open(obj, x, y)
             obj.UIContextMenu.open(x, y)
         end
     end
-    
+
     % Set methods for properties
     methods
         function set.SelectedType(obj, value)
@@ -67,7 +66,7 @@ classdef InstanceTypeMenu < handle & matlab.mixin.SetGet
             obj.postSetSelectedType()
         end
     end
-    
+
     % Postset methods for properties
     methods (Access = private)
         function postSetSelectedType(obj)
@@ -78,8 +77,8 @@ classdef InstanceTypeMenu < handle & matlab.mixin.SetGet
             end
         end
     end
-    
-    % Component callback methods 
+
+    % Component callback methods
     methods (Access = private)
         function onContextMenuItemClicked(obj, ~, event)
             obj.SelectedType = openminds.enum.Types(event.Source.Text);
@@ -97,7 +96,7 @@ classdef InstanceTypeMenu < handle & matlab.mixin.SetGet
                 if isempty(obj.UIContextMenu)
                     obj.UIContextMenu = uicontextmenu(hFigure);
                 end
-                
+
                 if ~isempty(obj.UIContextMenu.Children)
                     delete(obj.UIContextMenu.Children)
                 end
@@ -135,7 +134,7 @@ classdef InstanceTypeMenu < handle & matlab.mixin.SetGet
         % validateActiveType - Validate value for ActiveType property
 
             isValid = any( obj.Types == value );
-            
+
             errorMessage = sprintf( 'Selected type must be any of: %s', ...
                     strjoin(string(obj.Types), ', '));
 

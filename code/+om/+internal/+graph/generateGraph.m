@@ -38,7 +38,7 @@ function [G, edgeLabels] = generateGraph(module, options)
 
     arguments
         module (1,1) openminds.enum.Modules = 'core' %#ok<INUSA>
-        %force = false
+        % force = false
         options.Types (1,:) openminds.enum.Types = module.listTypes()      % Default: All types from selected module
     end
 
@@ -52,7 +52,7 @@ function [G, edgeLabels] = generateGraph(module, options)
 
     for i = 1:numTypes
         classFcn = str2func(typeClassNames(i));
-        
+
         try
             tempObj = classFcn();
 
@@ -69,14 +69,14 @@ function [G, edgeLabels] = generateGraph(module, options)
                     sources{end+1} = sourceName(2:end); %#ok<AGROW>
                     targets{end+1} = targetName(2:end); %#ok<AGROW>
                     edges{end+1} = propertyNames{j}; %#ok<AGROW>
-                
+
                 elseif isa(iValue, 'openminds.internal.abstract.MixedTypeSet')
 
                     allowedTypes = eval(sprintf("%s.ALLOWED_TYPES", class(iValue)));
 
                     for k = 1:numel(allowedTypes)
                         [~, ~, targetName] = fileparts( allowedTypes{k} );
-                        
+
                         sources{end+1} = sourceName(2:end); %#ok<AGROW>
                         targets{end+1} = targetName(2:end); %#ok<AGROW>
                         edges{end+1} = propertyNames{j}; %#ok<AGROW>
@@ -89,7 +89,7 @@ function [G, edgeLabels] = generateGraph(module, options)
         end
     end
 
-    %Todo create a node table:
+    % Todo create a node table:
     % nodeTable = table(...
     %     string(instanceId), ...
     %     string(instance), ...

@@ -5,7 +5,7 @@ classdef OpenMindsTheme < handle
     % formats? Or should it always be matlab centric, i.e 1x3 in [0,1]
 
     % Todo:
-    %   [ ] Define different theme superclasses. I.e this is a 2+3 brand 
+    %   [ ] Define different theme superclasses. I.e this is a 2+3 brand
     %       theme. Or define primary and secondary colors as vectors?
     %   [ ] Add accent colors?
 

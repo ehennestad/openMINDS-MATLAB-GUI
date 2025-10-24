@@ -7,7 +7,7 @@ classdef MetadataPage < wizard.abstract.Page
     end
 
     properties
-        %DataModel ndi.dataset.gui.models.DatasetInfo
+        % DataModel ndi.dataset.gui.models.DatasetInfo
     end
     properties (SetAccess = ?wizard.WizardApp)
         PageData
@@ -24,11 +24,10 @@ classdef MetadataPage < wizard.abstract.Page
         DatasetWidgets om.wizard.pages.component.Metadata
     end
 
-    
     methods % Constructor
-        %function obj = DatasetPage()
+        % function obj = DatasetPage()
         %    obj.AppData = ndi.dataset.gui.models.DatasetInfo();
-        %end
+        % end
     end
 
     methods
@@ -55,7 +54,7 @@ classdef MetadataPage < wizard.abstract.Page
     end
 
     methods (Access = protected)
-        
+
         function setPropertyValue(obj, propertyName, propertyValue)
             if ~isempty(obj.PageData)
                 obj.PageData.(propertyName) = propertyValue;
@@ -119,4 +118,3 @@ classdef MetadataPage < wizard.abstract.Page
         end
     end
 end
-

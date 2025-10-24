@@ -1,5 +1,5 @@
 function typeOrder = getPreferredTypeOrder(openmindsType, propertyName)
-    
+
     % Todo: Write a test that checks that the names in preferred order
     % matches the names in the instance
 
@@ -8,7 +8,7 @@ function typeOrder = getPreferredTypeOrder(openmindsType, propertyName)
     if isempty(preferences)
         preferences = loadPreferences();
     end
-    
+
     shortName = openminds.internal.utility.getSchemaName(openmindsType);
 
     typeOrder = [];

@@ -1,5 +1,5 @@
 function structInstance = toStruct(openMindsInstance, metadataCollection)
-    
+
     if isempty( openMindsInstance )
         structInstance = struct.empty; return
 
@@ -8,7 +8,7 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
         for i = 1:numel(structInstance)
             structInstance{i} = om.convert.toStruct( openMindsInstance(i), metadataCollection );
         end
-        %structInstance = [structInstance{:}];
+        % structInstance = [structInstance{:}];
         return
     end
 
@@ -27,19 +27,19 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
     % Order fields according to settings/preferences
     propertyOrder = om.internal.config.getPreferredPropertyOrder( openMindsType );
     structInstance = orderfields(structInstance, propertyOrder);
-    
+
     metaSchema = openminds.internal.meta.Type( openMindsInstance );
 
     % Fill out options for each property
     propNames = fieldnames(structInstance);
 
     for i = 1:numel(propNames)
-        
+
         iPropName = propNames{i};
         iValue = structInstance.(iPropName);
         iConfig = [];
         customFcn = [];
-        
+
         if isstring(iValue)
             if ismissing(iValue); iValue = ''; end
             if numel(iValue) > 1
@@ -59,9 +59,9 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
             iValue = categorical(names(1), names);
 
         elseif isa(iValue, 'openminds.abstract.ControlledTerm')
-            %names = eval( sprintf('%s.CONTROLLED_INSTANCES', class(iValue)));
-            %iValue = categorical(names(1), names);
-            
+            % names = eval( sprintf('%s.CONTROLLED_INSTANCES', class(iValue)));
+            % iValue = categorical(names(1), names);
+
             if metaSchema.isPropertyValueScalar(iPropName)
                 customFcn = @getConfigForScalarValue;
             else
@@ -134,7 +134,7 @@ function [value, config] = getConfigForNonScalarValue(name, value, openMindsInst
 
     editItemsFcn = @(value, varargin) ...
         om.uiEditHeterogeneousList(value, propertyTypeName, metadataCollection );
-    
+
     items = arrayfun(@(x) string(x), value);
     if isempty(value)
         itemsData = {value};
@@ -146,11 +146,11 @@ function [value, config] = getConfigForNonScalarValue(name, value, openMindsInst
         'Items', items, ...
         'ItemsData', value, ...
         'EditItemsFcn', editItemsFcn);
-    %value = itemsData;
+    % value = itemsData;
 end
 
 function [value, config] = getConfigForHeterogeneousScalarValue(name, value, openMindsInstance, metadataCollection)
-        
+
     arguments
         name char
         value openminds.internal.abstract.MixedTypeSet
@@ -167,12 +167,12 @@ function [value, config] = getConfigForHeterogeneousScalarValue(name, value, ope
 end
 
 function [value, configFcn] = getConfigForHeterogeneousNonScalarValue(name, value, openMindsInstance, metadataCollection)
-    
+
     propertyTypeName = openMindsInstance.X_TYPE + "/" + name;
 
     editItemsFcn = @(value, varargin) ...
         om.uiEditHeterogeneousList(value, propertyTypeName, metadataCollection );
-    
+
     items = arrayfun(@(x) string(x), value);
 
     % Todo: Clarify why this needs to be a cell array
@@ -187,5 +187,5 @@ function [value, configFcn] = getConfigForHeterogeneousNonScalarValue(name, valu
         'ItemsData', value, ...
         'EditItemsFcn', editItemsFcn);
 
-    %value = itemsData;
+    % value = itemsData;
 end

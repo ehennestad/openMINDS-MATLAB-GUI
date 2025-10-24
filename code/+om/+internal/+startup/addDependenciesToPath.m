@@ -2,7 +2,7 @@ function addDependenciesToPath()
 
     warnState = warning('off', 'MATLAB:javaclasspath:jarAlreadySpecified');
     warnCleanupObj = onCleanup(@() warning(warnState));
-    
+
     reqs = om.internal.startup.getRequirements();
 
     % Add all addons in the package's addon folder to path
@@ -36,16 +36,16 @@ end
 
 function [organization, repositoryName, branchName] = parseRepositoryURL(repoUrl)
 % parseRepositoryURL - Extract organization, repository name and branch name
-    
+
     arguments
         repoUrl (1,1) matlab.net.URI
     end
-    
+
     if repoUrl.Host ~= "github.com"
         error("SETUPTOOLS:GITHUB:InvalidRepositoryURL", ...
             "Please make sure the repository URL's host name is 'github.com'")
     end
-    
+
     pathNames = repoUrl.Path;
     pathNames( cellfun('isempty', pathNames) ) = [];
 
@@ -67,11 +67,10 @@ end
 
 function addGithubDependencyToPath(folderPath)
     startupFile = om.internal.startup.findStartupFile(folderPath);
-    
+
     if ~isempty(startupFile)
         run( startupFile )
     else
         addpath(genpath(folderPath))
     end
 end
-

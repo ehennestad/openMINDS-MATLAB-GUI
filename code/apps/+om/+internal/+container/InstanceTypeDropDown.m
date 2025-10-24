@@ -21,11 +21,11 @@ classdef InstanceTypeDropDown < om.internal.abstract.TypeSelector
         function createComponent(comp)
             comp.createDropDown()
         end
-        
+
         function updateSelectedTypeInComponent(comp)
             comp.UIComponent.Value = comp.SelectedType;
         end
-    
+
         function onSelectedTypeChangedInComponent(comp, src, evt)
             comp.onDropDownValueChanged(src, evt)
         end

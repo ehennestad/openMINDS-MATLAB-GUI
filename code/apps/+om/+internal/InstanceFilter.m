@@ -8,7 +8,7 @@ classdef InstanceFilter < handle
         FilterFunction (1,1) string = 'strcmp';
         FilterCondition = 'rattusNorvegicus';
     end
-    
+
     methods
         function instances = apply(obj, instances)
             values = cell(1,numel(instances));

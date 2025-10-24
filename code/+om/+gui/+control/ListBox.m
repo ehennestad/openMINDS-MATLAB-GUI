@@ -4,7 +4,7 @@ classdef ListBox < handle
     % Todo:
     %   [ ] Add facility for adding/removing items or replacing full list of items 
 
-    properties 
+    properties
         % Whether single or multiple items in the list can be selected
         SelectionMode char {mustBeMember(SelectionMode, {'single', 'multiple'})} = 'multiple'
     end
@@ -43,7 +43,7 @@ classdef ListBox < handle
 
     methods
         function obj = ListBox(hPanel, items)
-            
+
             obj.Items = items;
 
             if isa(items, 'cell')
@@ -58,7 +58,7 @@ classdef ListBox < handle
             xPad = 2;
 
             obj.Panel = hPanel;
-            
+
             hToolbar = uim.widget.toolbar_(obj.Panel, 'Location', 'northwest', ...
                 'Margin', [0,0,0,10],'ComponentAlignment', 'top', ...
                 'BackgroundAlpha', 0, 'IsFixedSize', [true, false], ...
@@ -69,15 +69,14 @@ classdef ListBox < handle
                 'Padding', [xPad,2,xPad,2], 'CornerRadius', 0, ...
                 'Mode', 'togglebutton', 'Style', uim.style.tabButton, ...
                 'IconSize', [12,12], 'IconTextSpacing', 7};
-            
+
             % Bug with toolbar so buttons are created from the bottom up
             counter = 0;
             for i = numel(obj.Name):-1:1
                 counter = counter+1;
-                
+
                 thisName = obj.Name{i};
                 thisIcon = obj.Icon{i};
-
 
 %                 if any(strcmpi(obj.ICONS.iconNames, obj.Name{i}) )
 %                     icon = obj.ICONS.(lower(obj.Name{i}));
@@ -93,7 +92,7 @@ classdef ListBox < handle
                     obj.Buttons(counter).Value = true;
                 end
             end
-            
+
             obj.ButtonCollection = hToolbar;
             hToolbar.Location = 'northwest';
         end
@@ -115,7 +114,6 @@ classdef ListBox < handle
         end
     end
 
-
     methods (Access = private)
 
         function onListButtonPressed(obj, src, evt, idx) %#ok<INUSD>
@@ -132,7 +130,7 @@ classdef ListBox < handle
                         src.Value = true;
                         return
                     end
-                    
+
                     % Make sure other buttons are unselected
                     if ~isempty(obj.SelectedButtons)
                         for i = 1:numel(obj.SelectedButtons)
@@ -148,7 +146,7 @@ classdef ListBox < handle
                     obj.SelectedButtons = src;
 
                 case 'extend'
-                    
+
                     if any(obj.SelectedButtons == src)
                         src.Value = true;
                         return
@@ -156,7 +154,7 @@ classdef ListBox < handle
                         obj.SelectedButtons = [obj.SelectedButtons, src];
                         triggerCallback = true;
                     end
-                    
+
                 case 'open'
                     if isequal(obj.SelectedButtons, src)
                         src.Value = true;
@@ -166,13 +164,13 @@ classdef ListBox < handle
 
             newSelection = {obj.SelectedButtons.Tag};
 
-            %buttonNames = {obj.SelectedButtons.Text};
-            %fprintf('Selected buttons: %s\n', strjoin(buttonNames, ', '))
+            % buttonNames = {obj.SelectedButtons.Text};
+            % fprintf('Selected buttons: %s\n', strjoin(buttonNames, ', '))
 
             % Call the SelectionChangedFcn if present...
             if ~isempty(obj.SelectionChangedFcn) && triggerCallback
-                %disp('Selection Changed')
-                
+                % disp('Selection Changed')
+
                 evt = om.gui.event.ItemSelectionEventData(oldSelection, newSelection);
                 obj.SelectionChangedFcn(obj, evt)
             end
@@ -185,7 +183,7 @@ classdef ListBox < handle
         %updateSelectedItems Programmatic entry point for setting items
 
             buttonNames = {obj.Buttons.Text};
-            
+
             if isempty(obj.SelectedButtons)
                 oldSelection = {};
             else
@@ -199,7 +197,7 @@ classdef ListBox < handle
             end
 
             if isa(newSelection, 'char'); newSelection = {newSelection}; end
-            
+
             newSelection = cellfun(@(c) om.internal.strutil.varname2label(c), newSelection, 'UniformOutput', false);
 
             for i = 1:numel(newSelection)
@@ -213,7 +211,7 @@ classdef ListBox < handle
 
             % Call the SelectionChangedFcn if preset...
             if ~isempty(obj.SelectionChangedFcn)
-                %evt = event.EventData();
+                % evt = event.EventData();
                 evt = om.gui.event.ItemSelectionEventData(oldSelection, newSelection);
                 obj.SelectionChangedFcn(obj, evt)
             end

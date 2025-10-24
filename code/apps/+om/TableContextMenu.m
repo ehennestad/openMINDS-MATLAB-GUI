@@ -1,16 +1,16 @@
 classdef TableContextMenu < handle & matlab.mixin.SetGet
-    
+
     properties
         DeleteItemFcn
     end
-    
+
     properties (Access = private)
         UIFigure
         UIContextMenu
 
         UIMenuItemDeleteItem
     end
-    
+
     methods
         function [obj, uiContextMenu] = TableContextMenu(hFigure, nvPairs)
         % TableContextMenu - Create a TableContextMenu instance
@@ -24,7 +24,7 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
             obj.UIContextMenu = uicontextmenu(hFigure);
             obj.createMenuItems()
             obj.assignMenuItemCallbacks()
-            
+
             if ~nargout
                 clear obj
             end
@@ -35,7 +35,7 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
         end
     end
 
-    methods 
+    methods
         function set.DeleteItemFcn(obj, value)
             obj.DeleteItemFcn = value;
             obj.postSetDeleteItemFcn()
@@ -47,7 +47,6 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
 
             obj.UIMenuItemDeleteItem = uimenu(obj.UIContextMenu, ...
                 "Text", "Delete instance");
-
         end
 
         function assignMenuItemCallbacks(obj)

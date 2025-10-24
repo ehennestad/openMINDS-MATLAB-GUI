@@ -7,7 +7,7 @@ classdef ProductPage < wizard.abstract.Page
     end
 
     properties
-        %DataModel ndi.dataset.gui.models.DatasetInfo
+        % DataModel ndi.dataset.gui.models.DatasetInfo
     end
     properties (Dependent)
         SelectedProduct
@@ -27,14 +27,14 @@ classdef ProductPage < wizard.abstract.Page
             value = obj.getPropertyValue("SelectedProduct");
         end
     end
-    
+
     methods % Constructor
         function obj = ProductPage()
         end
     end
 
     methods (Access = protected)
-        
+
         function setPropertyValue(obj, propertyName, propertyValue)
             if ~isempty(obj.PageData)
                 obj.PageData.(propertyName) = propertyValue;
@@ -77,4 +77,3 @@ classdef ProductPage < wizard.abstract.Page
         end
     end
 end
-

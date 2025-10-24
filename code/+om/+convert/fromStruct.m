@@ -16,10 +16,10 @@ function instance = fromStruct(instance, data, metadataCollection) %#ok<INUSD>
         elseif isnumeric(iValue)
             instance.(iPropName) = cast(data.(iPropName), class(instance.(iPropName)));
         elseif isa(iValue, 'openminds.abstract.ControlledTerm')
-            %instance.(iPropName) = char(data.(iPropName));
+            % instance.(iPropName) = char(data.(iPropName));
 
             linkedInstance = data.(iPropName);
-            
+
             % Unpack instances from cell arrays (Todo: function for this)
             if isa(linkedInstance, 'cell')
                 if numel(linkedInstance) == 1
@@ -53,17 +53,17 @@ function instance = fromStruct(instance, data, metadataCollection) %#ok<INUSD>
                 elseif isa(linkedInstance, 'openminds.internal.abstract.MixedTypeSet')
                     % pass
                 else
-                    keyboard 
-                    %schemaInstance =
-                    %metadataCollection.getInstanceFromLabel(schemaName,
-                    %label); Todo: What case is this trying to solve?
+                    keyboard
+                    % schemaInstance =
+                    % metadataCollection.getInstanceFromLabel(schemaName,
+                    % label); Todo: What case is this trying to solve?
                 end
             end
-            
+
             instance.(iPropName) = linkedInstance;
         elseif isa(iValue, 'openminds.internal.abstract.MixedTypeSet')
             linkedInstance = data.(iPropName);
-            
+
             if isa(linkedInstance, 'cell')
                 linkedInstance = [linkedInstance{:}];
             end

@@ -7,10 +7,10 @@ classdef CompletionPage < wizard.abstract.Page
     end
 
     properties
-        %DataModel ndi.dataset.gui.models.DatasetInfo
+        % DataModel ndi.dataset.gui.models.DatasetInfo
     end
     properties (SetAccess = ?wizard.WizardApp)
-        PageData 
+        PageData
     end
 
     properties (Access = private) % App components
@@ -18,14 +18,13 @@ classdef CompletionPage < wizard.abstract.Page
         DatasetWidgets om.wizard.pages.component.NextSteps
     end
 
-    
     methods % Constructor
         function obj = CompletionPage()
         end
     end
 
     methods (Access = protected)
-        
+
         function setPropertyValue(obj, propertyName, propertyValue)
             if ~isempty(obj.PageData)
                 obj.PageData.(propertyName) = propertyValue;
@@ -65,4 +64,3 @@ classdef CompletionPage < wizard.abstract.Page
         end
     end
 end
-
