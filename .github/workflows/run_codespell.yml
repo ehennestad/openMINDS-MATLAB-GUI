@@ -1,7 +1,6 @@
-# Note: This workflow allows specifying a custom location for the Codespell 
-# configuration file by defining CONFIG_FILE as an environment variable. 
-
-name: Codespell
+name: Run Codespell
+# NB: Will only process "skip" and "ignore-words-list" from the codespell 
+# config file if provided
 
 on:
   push:
@@ -15,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  reuse-workflow-run-codespell:
+  run-codespell:
     name: Run Codespell
-    uses: ehennestad/matbox/.github/workflows/reusable_run_codespell.yml@v0.9
+    uses: ehennestad/matbox-actions/.github/workflows/codespell-workflow.yml@v1
     with:
       config_file: tools/.codespellrc
