@@ -26,9 +26,9 @@ classdef MetadataPage < wizard.abstract.Page
 
     
     methods % Constructor
-        function obj = DatasetPage()
-            %obj.AppData = ndi.dataset.gui.models.DatasetInfo();
-        end
+        %function obj = DatasetPage()
+        %    obj.AppData = ndi.dataset.gui.models.DatasetInfo();
+        %end
     end
 
     methods

@@ -10,8 +10,8 @@ classdef SelectInstance < om.internal.abstract.Action
     end
 
     methods
-        function [wasSuccess, itemsData] = execute(obj)
-
+        function [wasSuccess, itemsData] = execute(obj) %#ok<STOUT,MANU>
+            % TODO
         end
     end
 end

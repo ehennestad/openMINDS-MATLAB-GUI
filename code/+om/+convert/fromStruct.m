@@ -1,4 +1,4 @@
-function instance = fromStruct(instance, data, metadataCollection)
+function instance = fromStruct(instance, data, metadataCollection) %#ok<INUSD>
 
     propNames = properties(instance);
 
@@ -53,8 +53,10 @@ function instance = fromStruct(instance, data, metadataCollection)
                 elseif isa(linkedInstance, 'openminds.internal.abstract.MixedTypeSet')
                     % pass
                 else
-                    keyboard
-                    %schemaInstance = metadataCollection.getInstanceFromLabel(schemaName, label);
+                    keyboard 
+                    %schemaInstance =
+                    %metadataCollection.getInstanceFromLabel(schemaName,
+                    %label); Todo: What case is this trying to solve?
                 end
             end
             

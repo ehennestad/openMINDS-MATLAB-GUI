@@ -33,7 +33,7 @@ classdef IntroPage < wizard.abstract.Page
 
         function onPageExited(obj)
             % Subclasses may override
-            obj.ParentApp.DescriptionLabel.Layout.Row = [1];
+            obj.ParentApp.DescriptionLabel.Layout.Row = 1;
         end
 
         function createComponents(obj)

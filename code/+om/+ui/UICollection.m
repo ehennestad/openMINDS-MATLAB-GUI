@@ -27,7 +27,11 @@ classdef UICollection < openminds.Collection
     properties (Access = private)
         EventStates
     end
-    
+
+    properties (Dependent) % Todo
+        ContainedTypes (1,:) string % A list of types present in collection
+    end
+
     events
         CollectionChanged
         InstanceAdded
@@ -197,11 +201,7 @@ classdef UICollection < openminds.Collection
             end
             obj.Nodes(instanceId) = {instance};
         end
-
-        function updateMetadata(obj)
-            % Update all metadata
-        end
-
+        
         function createListenersForAllInstances(obj)
         
             keyNames = obj.Nodes.keys();
@@ -572,7 +572,7 @@ classdef UICollection < openminds.Collection
             end
 
             % Get keys for joining
-            [leftKey, ~] = obj.getKeyPairsForJoin(instanceLinkee, instanceLinked);
+            % [leftKey, ~] = obj.getKeyPairsForJoin(instanceLinkee, instanceLinked);
             leftKey = 'id';  % Using ID as the key for now
             rightKey = 'id';
 
@@ -593,8 +593,9 @@ classdef UICollection < openminds.Collection
 
     methods (Access = protected) % Methods for getting instances in table representations
         
-        function [leftKey, rightKey] = getKeyPairsForJoin(obj, schemaNameLinker, schemaNameLinkee)
-            
+        function [leftKey, rightKey] = getKeyPairsForJoin(obj, schemaNameLinker, schemaNameLinkee) %#ok<INUSD>
+            % Todo
+
             disp('a')
             leftKey = 'studiedState';
             rightKey = 'id';
@@ -723,11 +724,6 @@ classdef UICollection < openminds.Collection
             end
         end
     end
-
-    methods
-        function exist()
-        end
-    end
     
     methods (Access = ?om.MetadataEditor)
         function enableEvent(obj, eventName)
@@ -747,7 +743,7 @@ classdef UICollection < openminds.Collection
         %
         %   Example:
         %   fullSchemaName = 'openminds.core.research.Subject';
-        %   shortSchemaName = om.MetadataSet.getSchemaShortName(fullSchemaName)
+        %   shortSchemaName = om.ui.UICollection.getSchemaShortName(fullSchemaName)
         %   shortSchemaName =
         %
         %     'Subject'

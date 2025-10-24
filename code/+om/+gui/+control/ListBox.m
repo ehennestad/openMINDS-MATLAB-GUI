@@ -86,7 +86,7 @@ classdef ListBox < handle
 %                 end
 
                 obj.Buttons(counter) = hToolbar.addButton(...
-                    'Text', utility.string.varname2label(thisName), 'Icon', thisIcon, ...
+                    'Text', om.internal.strutil.varname2label(thisName), 'Icon', thisIcon, ...
                     'Callback', @(s,e,n) obj.onListButtonPressed(s,e,i), ...
                     'Tag', thisName, buttonConfig{:} );
                 if i == 1
@@ -118,7 +118,9 @@ classdef ListBox < handle
 
     methods (Access = private)
 
-        function onListButtonPressed(obj, src, evt, idx)
+        function onListButtonPressed(obj, src, evt, idx) %#ok<INUSD>
+
+            % Todo: Why is index needed as input
 
             triggerCallback = false;
             oldSelection = {obj.SelectedButtons.Tag};
@@ -179,12 +181,8 @@ classdef ListBox < handle
             % - What listeners?
         end
 
-        function updateSelectedItems(obj, newSelection, force)
+        function updateSelectedItems(obj, newSelection)
         %updateSelectedItems Programmatic entry point for setting items
-            
-            if nargin < 3
-                force = false;
-            end
 
             buttonNames = {obj.Buttons.Text};
             
@@ -202,7 +200,7 @@ classdef ListBox < handle
 
             if isa(newSelection, 'char'); newSelection = {newSelection}; end
             
-            newSelection = cellfun(@(c) utility.string.varname2label(c), newSelection, 'UniformOutput', false);
+            newSelection = cellfun(@(c) om.internal.strutil.varname2label(c), newSelection, 'UniformOutput', false);
 
             for i = 1:numel(newSelection)
                 isSelectedButton = strcmp(buttonNames, newSelection{i});

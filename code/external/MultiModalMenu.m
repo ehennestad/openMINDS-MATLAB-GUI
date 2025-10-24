@@ -225,9 +225,10 @@ classdef MultiModalMenu < handle
             obj.buildMenuFromDirectory(obj.Figure);
         end
 
-        function refreshMenuItem(obj, menuName)
-            % menuName or functionName ?
-            % Todo...
+        function refreshMenuItem(~, ~)
+        % Todo: Refresh a single menu name given its name, tag or the name
+        % of the function it represents
+            
         end
 
         function addMenuItemForFile(obj, hParent, mFilePath)
@@ -248,8 +249,6 @@ classdef MultiModalMenu < handle
             obj.createMenuCallback(iSubMenu, functionName)
             obj.storeMenuObject(iSubMenu, functionName)
         end
-
-
     end
 
     methods (Access = private) % Methods for changing mode...
@@ -336,9 +335,6 @@ classdef MultiModalMenu < handle
         % and create a menu item for each matlab function which is found 
         % inside. The menu item is configured to trigger an event when it
         % is selected.
-
-        % Requires: 
-        %   om.internal.strutil.varname2label (utility.string.varname2label)
 
             if nargin < 3
                 dirPath = obj.DefaultMethodsPath;
@@ -645,7 +641,7 @@ function isSnakeCase = issnakecase(varname)
 end
 
 function isCapitalized = iscapitalized(varname)
-    isCapitalized = strcmp(varname, upper(varname)); %#ok<STCI>
+    isCapitalized = strcmp(varname, upper(varname));
 end
 
 function functionName = abspath2funcname(pathStr)

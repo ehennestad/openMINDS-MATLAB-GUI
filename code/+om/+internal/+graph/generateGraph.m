@@ -1,4 +1,4 @@
-function [G, edgeLabels] = generateGraph(module, optionals)
+function [G, edgeLabels] = generateGraph(module, options)
 % GENERATEGRAPH Generates a directed graph of class relationships for a specified OpenMINDS module.
 %
 %   G = GENERATEGRAPH(moduleName) constructs a directed graph G where the nodes
@@ -37,18 +37,16 @@ function [G, edgeLabels] = generateGraph(module, optionals)
     % Modify type classes to include incoming links/edges.
 
     arguments
-        module (1,:) openminds.enum.Modules = 'core'
+        module (1,1) openminds.enum.Modules = 'core' %#ok<INUSA>
         %force = false
-        optionals.ClassNames (1,:) string = missing
+        options.Types (1,:) openminds.enum.Types = module.listTypes()      % Default: All types from selected module
     end
 
     % Retrieve all class names for the selected openMINDS module
-    types = module.listTypes();
-    typeClassNames = [types.ClassName];
+    typeClassNames = [options.Types.ClassName];
 
     % Initialize lists to populate
     [sources, targets, edges] = deal(cell(0,1));
-    [labels, types] = deal(string.empty);
 
     numTypes = numel(typeClassNames);
 
@@ -85,17 +83,20 @@ function [G, edgeLabels] = generateGraph(module, optionals)
                     end
                 end
             end
+        catch ME
+            fprintf('NB: Failed to update sources and targets for %s\nReason: %s', ...
+                typeClassNames(i), ME.message)
         end
     end
 
-    %Todo create a notetable:
+    %Todo create a node table:
     % nodeTable = table(...
     %     string(instanceId), ...
     %     string(instance), ...
     %     string(openminds.internal.utility.getSchemaShortName(class(instance))), ...
     %     'VariableNames', {'Name' 'Label', 'Type'});
 
-    G = digraph(sources,targets);
+    G = digraph(sources, targets);
     if nargout == 2
         edgeLabels = edges;
     end

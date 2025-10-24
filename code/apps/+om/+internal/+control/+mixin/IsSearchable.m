@@ -10,12 +10,8 @@ classdef IsSearchable < handle
     
     methods (Access = protected)
 
-        function filterDropdown(comp, searchString)
-
+        function filterDropdown(comp, searchString) %#ok<INUSD>
 
         end
-
     end
-    
-    
 end
