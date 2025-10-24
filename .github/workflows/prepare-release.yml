@@ -22,7 +22,7 @@ jobs:
       # Do not change
       ref_name: ${{ github.ref_name }}
       
-      code_directory: code
+      source_directory: code
       tools_directory: tools
       tests_directory: tools/tests
       
