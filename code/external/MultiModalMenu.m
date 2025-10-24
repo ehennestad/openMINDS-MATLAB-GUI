@@ -337,9 +337,6 @@ classdef MultiModalMenu < handle
         % inside. The menu item is configured to trigger an event when it
         % is selected.
 
-        % Requires: 
-        %   om.internal.strutil.varname2label
-
             if nargin < 3
                 dirPath = obj.DefaultMethodsPath;
                 isRootDirectory = true;
@@ -645,7 +642,7 @@ function isSnakeCase = issnakecase(varname)
 end
 
 function isCapitalized = iscapitalized(varname)
-    isCapitalized = strcmp(varname, upper(varname)); %#ok<STCI>
+    isCapitalized = strcmp(varname, upper(varname));
 end
 
 function functionName = abspath2funcname(pathStr)
