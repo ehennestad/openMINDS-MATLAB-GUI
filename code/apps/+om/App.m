@@ -1,3 +1,3 @@
 function App()
-    om.ModelBuilder()
+    om.MetadataEditor()
 end

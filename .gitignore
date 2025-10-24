@@ -12,6 +12,8 @@ docs/reports/*
 
 # openMINDS logo
 light_openMINDS-logo.png
+openMINDS_logo_light.png
+openMINDS_logo_dark.png
 
 *.mat
 

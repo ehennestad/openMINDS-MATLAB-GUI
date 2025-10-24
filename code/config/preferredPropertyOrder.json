@@ -9,5 +9,6 @@
                         "relatedPublication", "fullDocumentation",
                         "repository", "releaseDate", "homepage"],
     "Person": ["givenName", "familyName", "contactInformation", "digitalIdentifier", "affiliation", "associatedAccount", "alternateName"],
-    "Organization": ["fullName", "shortName", "digitalIdentifier", "homepage", "affiliation", "hasParent"]
+    "Organization": ["fullName", "shortName", "digitalIdentifier", "homepage", "affiliation", "hasParent"],
+    "Subject": ["lookupLabel", "biologicalSex", "species", "internalIdentifier", "studiedState", "isPartOf"]
 }

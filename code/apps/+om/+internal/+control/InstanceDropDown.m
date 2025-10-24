@@ -334,7 +334,8 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                     if isequal(string(comp.Value), comp.ItemsData{i})
                         valueIndex = i; break
                     end
-                elseif isa(comp.ItemsData{i}, 'openminds.abstract.Schema')
+                elseif openminds.utility.isInstance(comp.ItemsData{i}) || ...
+                        openminds.utility.isMixedInstance(comp.ItemsData{i})
                     if isequal(comp.Value, comp.ItemsData{i})
                         valueIndex = i; break
                     end
@@ -693,6 +694,10 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                     % Create items (string labels for items data)
                     items = arrayfun(@(i) string(char(i)), itemsData);
                 end
+
+                % Sort items for dropdowns by names/labels
+                [items, sortIdx] = sort(items);
+                itemsData = itemsData(sortIdx);
             end
 
             comp.Items = items;
@@ -813,7 +818,7 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
         function wasSuccess = editInstance(comp)
             wasSuccess = false;
 
-            if isa(comp.Value, 'openminds.internal.abstract.LinkedCategory')
+            if isa(comp.Value, 'openminds.internal.abstract.MixedTypeSet')
                 currentValue = comp.Value.Instance;
             else
                 currentValue = comp.Value;
