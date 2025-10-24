@@ -160,7 +160,7 @@ classdef MetadataEditor < handle
             delete(obj.Figure)
         end
 
-        function onExit(obj, src, evt)
+        function onExit(obj, ~, ~)
             obj.saveMetadataCollection()
             obj.saveGraphCoordinates() % Todo
 
@@ -219,17 +219,6 @@ classdef MetadataEditor < handle
             obj.UIPanel.Table.Position = [w+MARGIN+PADDING, MARGIN, W-MARGIN*2-w-PADDING, h];
 
             obj.UIPanel.Logo.Position = [MARGIN, MARGIN, logoW, logoH];
-        end
-
-        function columnSettings = loadMetatableColumnSettings(obj)
-            rootDir = fileparts(mfilename('fullpath'));
-            filename = fullfile(rootDir, 'table_column_settings.mat');
-            try
-                S = load(filename, 'columnSettings');
-                columnSettings = S.columnSettings;
-            catch
-                columnSettings = struct.empty;
-            end
         end
 
         function saveMetatableColumnSettings(obj)
@@ -501,7 +490,7 @@ classdef MetadataEditor < handle
 
     methods (Access = private) % Internal callback methods
         
-        function onKeyPressed(obj, src, evt)
+        function onKeyPressed(obj, ~, evt)
 
             switch evt.Key
                 case 'x'
@@ -510,7 +499,7 @@ classdef MetadataEditor < handle
 
         end
 
-        function onMetaTableDataChanged(obj, src, evt)
+        function onMetaTableDataChanged(obj, ~, evt)
         % onMetaTableDataChanged - Call back to handle value changes from table
             instanceIndex = evt.Indices(1);
             instanceID = obj.CurrentTableInstanceIds{instanceIndex};
@@ -528,7 +517,7 @@ classdef MetadataEditor < handle
             obj.MetadataCollection.modifyInstance(instanceID, propName, propValue);
         end
 
-        function onSelectionChanged(obj, src, evt)
+        function onSelectionChanged(obj, ~, evt)
             
             selectedTypes = evt.NewSelection;
             obj.CurrentSchemaTableName = selectedTypes;
@@ -549,7 +538,7 @@ classdef MetadataEditor < handle
             app.updateLayoutPositions()
         end
 
-        function onProjectTypeSelected(obj, src, evt)
+        function onProjectTypeSelected(obj, src, ~)
 
             delete(obj.SchemaMenu)
 
@@ -574,7 +563,7 @@ classdef MetadataEditor < handle
             obj.SchemaMenu.MenuSelectedFcn = @obj.onSchemaMenuItemSelected;
         end
 
-        function onGraphLayoutChanged(obj, src, evt)
+        function onGraphLayoutChanged(obj, src, ~)
             set([src.Parent.Children], 'Checked', 'off')
             src.Checked = 'on';
             obj.UIGraphViewer.Layout = src.Text;
@@ -620,7 +609,7 @@ classdef MetadataEditor < handle
             % Todo: update tables...!
         end
 
-        function onCreateNewButtonPressed(obj, src, evt)
+        function onCreateNewButtonPressed(obj, ~, ~)
 
             selectedItems = obj.UISideBar.SelectedItems{1};
             type = openminds.internal.vocab.getSchemaName(selectedItems);
@@ -632,7 +621,7 @@ classdef MetadataEditor < handle
             %obj.changeSelection(string(type))
         end
         
-        function onMetadataCollectionChanged(obj, src, evt)
+        function onMetadataCollectionChanged(obj, ~, ~)
             
             G = obj.MetadataCollection.graph;
             obj.UIGraphViewer.updateGraph(G);
@@ -642,7 +631,7 @@ classdef MetadataEditor < handle
             obj.updateUITable(T)
         end
 
-        function onMetadataInstanceModified(obj, src, evt)
+        function onMetadataInstanceModified(obj, ~, ~)
 
             G = obj.MetadataCollection.graph;
             obj.UIGraphViewer.updateGraph(G);
@@ -651,7 +640,7 @@ classdef MetadataEditor < handle
             obj.updateUITable(T)
         end
 
-        function onDeleteMetadataInstanceClicked(obj, src, evt)
+        function onDeleteMetadataInstanceClicked(obj, ~, ~)
             selectedIdx = obj.UIMetaTableViewer.getSelectedEntries();
 
             % Todo: Make sure this is name and not label.
@@ -672,7 +661,7 @@ classdef MetadataEditor < handle
             %app.UiMetaTableViewer.refreshTable(app.MetaTable)
         end
     
-        function onMouseDoubleClickedInTable(obj, src, evt)
+        function onMouseDoubleClickedInTable(obj, ~, evt)
         % onMouseDoubleClickedInTable - Callback for double clicks
         %
         %   Check if the currently selected column has an associated table
@@ -841,6 +830,20 @@ classdef MetadataEditor < handle
             fileName = logoURI.Path(end);
 
             logoFilepath = fullfile('/',thisFullpathSplit{1:end-2}, fileName);
+        end
+    end
+
+    methods (Static, Access = private)
+        function columnSettings = loadMetatableColumnSettings()
+            % Todo: represent as json?
+            rootDir = fileparts(mfilename('fullpath'));
+            filename = fullfile(rootDir, 'table_column_settings.mat');
+            try
+                S = load(filename, 'columnSettings');
+                columnSettings = S.columnSettings;
+            catch
+                columnSettings = struct.empty;
+            end
         end
     end
 end
