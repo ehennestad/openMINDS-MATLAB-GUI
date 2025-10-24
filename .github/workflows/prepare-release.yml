@@ -18,8 +18,10 @@ jobs:
     with:
       version: ${{ inputs.version }}
       ref_name: ${{ github.ref_name }}
+      
       source_directory: code
-      tests_directory: tools/tests
       tools_directory: tools
+      tests_directory: tests
+      
     secrets:
       DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}

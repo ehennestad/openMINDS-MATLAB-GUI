@@ -1,5 +1,4 @@
 name: Run Codespell
-
 # NB: Will only process "skip" and "ignore-words-list" from the codespell 
 # config file if provided
 
