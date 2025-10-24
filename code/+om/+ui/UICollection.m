@@ -723,11 +723,6 @@ classdef UICollection < openminds.Collection
             end
         end
     end
-
-    methods
-        function exist()
-        end
-    end
     
     methods (Access = ?om.MetadataEditor)
         function enableEvent(obj, eventName)
