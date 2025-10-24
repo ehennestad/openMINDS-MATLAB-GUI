@@ -20,9 +20,10 @@ function omg_install(flags, options)
     omuiRootPath = fileparts(mfilename('fullpath'));
     addpath(genpath(fullfile(omuiRootPath, 'code')))
     addpath(genpath(fullfile(omuiRootPath, 'tools')))
+    if exist('+matbox/installRequirements', 'file') ~= 2
+        omuitools.installMatBox("commit")
+    end
     
-    omuitools.installMatBox("commit")
-
     % Turn off warning that might show if the WidgetsToolbox dependency is
     % already installed
     warnState = warning('off', 'MATLAB:javaclasspath:jarAlreadySpecified');
