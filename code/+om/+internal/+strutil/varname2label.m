@@ -25,7 +25,7 @@ if ~ischar(varname); varname = inputname(1); end
 if contains(varname, '.')
     splitVarname = strsplit(varname, '.');
     if includePackageName
-        splitVarname = cellfun(@(c) utility.string.varname2label(c), splitVarname, 'uni', 0);
+        splitVarname = cellfun(@(c) om.internal.strutil.varname2label(c), splitVarname, 'uni', 0);
         label = strjoin(splitVarname, '-');
         return
     else
@@ -92,5 +92,5 @@ function isSnakeCase = issnakecase(varname)
 end
 
 function isCapitalized = iscapitalized(varname)
-    isCapitalized = strcmp(varname, upper(varname)); %#ok<STCI>
+    isCapitalized = strcmp(varname, upper(varname));
 end

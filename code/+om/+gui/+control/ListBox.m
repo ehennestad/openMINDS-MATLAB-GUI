@@ -86,7 +86,7 @@ classdef ListBox < handle
 %                 end
 
                 obj.Buttons(counter) = hToolbar.addButton(...
-                    'Text', utility.string.varname2label(thisName), 'Icon', thisIcon, ...
+                    'Text', om.internal.strutil.varname2label(thisName), 'Icon', thisIcon, ...
                     'Callback', @(s,e,n) obj.onListButtonPressed(s,e,i), ...
                     'Tag', thisName, buttonConfig{:} );
                 if i == 1
@@ -202,7 +202,7 @@ classdef ListBox < handle
 
             if isa(newSelection, 'char'); newSelection = {newSelection}; end
             
-            newSelection = cellfun(@(c) utility.string.varname2label(c), newSelection, 'UniformOutput', false);
+            newSelection = cellfun(@(c) om.internal.strutil.varname2label(c), newSelection, 'UniformOutput', false);
 
             for i = 1:numel(newSelection)
                 isSelectedButton = strcmp(buttonNames, newSelection{i});

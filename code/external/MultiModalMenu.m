@@ -338,7 +338,7 @@ classdef MultiModalMenu < handle
         % is selected.
 
         % Requires: 
-        %   om.internal.strutil.varname2label (utility.string.varname2label)
+        %   om.internal.strutil.varname2label
 
             if nargin < 3
                 dirPath = obj.DefaultMethodsPath;
