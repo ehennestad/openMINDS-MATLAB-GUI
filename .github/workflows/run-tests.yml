@@ -26,7 +26,7 @@ jobs:
     with:
       source_directory: code
       tools_directory: tools
-      tests_directory: tools/tests
+      tests_directory: tests
 
       # Name of MATLAB Release to use for running test suites and code analysis
       matlab_release: latest

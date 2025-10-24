@@ -24,7 +24,7 @@ jobs:
       
       source_directory: code
       tools_directory: tools
-      tests_directory: tools/tests
+      tests_directory: tests
       
     secrets:
       # SSH deploy key for pushing to protected branches. Required for creating
