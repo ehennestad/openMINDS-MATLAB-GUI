@@ -576,7 +576,7 @@ classdef UICollection < openminds.Collection
             end
 
             % Get keys for joining
-            [leftKey, ~] = obj.getKeyPairsForJoin(instanceLinkee, instanceLinked);
+            % [leftKey, ~] = obj.getKeyPairsForJoin(instanceLinkee, instanceLinked);
             leftKey = 'id';  % Using ID as the key for now
             rightKey = 'id';
 
@@ -598,7 +598,8 @@ classdef UICollection < openminds.Collection
     methods (Access = protected) % Methods for getting instances in table representations
         
         function [leftKey, rightKey] = getKeyPairsForJoin(obj, schemaNameLinker, schemaNameLinkee)
-            
+            % Todo
+
             disp('a')
             leftKey = 'studiedState';
             rightKey = 'id';
