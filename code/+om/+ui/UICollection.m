@@ -767,5 +767,17 @@ classdef UICollection < openminds.Collection
             obj.TypeMap = collection.TypeMap;
             obj.buildGraphFromNodes()
         end
+
+        function obj = loadobj(S)
+            if isstruct(S)
+                error('OMUI:UICollection:IncompatibleCollection', ...
+                    ['Could not load current collection. It might have been ', ...
+                    'created with an older version of this class'])
+            end
+            if isempty(S.EventStates)
+                S.initializeEventStates()
+            end
+            obj = S;
+        end
     end
 end
