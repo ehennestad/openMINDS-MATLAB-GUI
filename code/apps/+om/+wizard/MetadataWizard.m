@@ -144,7 +144,7 @@ classdef MetadataWizard < wizard.WizardApp
 
     methods (Access = private) 
         function promptSaveCurrentChanges(app)
-            % Todo: Check if there are changes...
+            % Todo: Check if there are changes before asking to save changes...
             return
             if isempty(app.AppData) || app.AppData.isClean()
                 return
