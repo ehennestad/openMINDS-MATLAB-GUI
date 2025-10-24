@@ -19,7 +19,12 @@ function addDependenciesToPath()
 
             case 'FileExchange'
                 [packageUuid, version] = om.internal.startup.fex.parseFileExchangeURI( reqs(i).URI );
-                [isInstalled, version] = om.internal.startup.fex.isToolboxInstalled(packageUuid, version);
+                try
+                    [isInstalled, version] = om.internal.startup.fex.isToolboxInstalled(packageUuid, version);
+                catch ME
+                    warning(ME.identifier, 'Failed to check if FEX package "%s" is installed with message:\n%s\n', reqs(i).URI, ME.message)
+                    isInstalled = false;
+                end
                 if isInstalled
                     matlab.addons.enableAddon(packageUuid, version)
                 end
