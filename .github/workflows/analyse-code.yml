@@ -1,0 +1,20 @@
+name: Analyse code
+
+on:
+  push:
+    branches: [ "main" ]
+    
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check_code:
+    name: Run code analyser
+    uses: ehennestad/matbox-actions/.github/workflows/check-code-workflow.yml@v1
+    with:
+      source_directory: code
+      tools_directory: tools
