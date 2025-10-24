@@ -8,8 +8,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  reuse-workflow-check-code:
+  check_code:
     name: Run code analyser
-    uses: ehennestad/matbox/.github/workflows/reusable_check_code.yml@v0.9
+    uses: ehennestad/matbox-actions/.github/workflows/check-code-workflow.yml@v1
     with:
-      matlab_use_cache: true
+      source_directory: code
+      tools_directory: tools

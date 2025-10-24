@@ -1,9 +1,9 @@
 function structInstance = toStruct(openMindsInstance, metadataCollection)
     
-    if isempty( openMindsInstance ) 
+    if isempty( openMindsInstance )
         structInstance = struct.empty; return
 
-    elseif numel( openMindsInstance ) > 1 
+    elseif numel( openMindsInstance ) > 1
         structInstance = cell(1, numel(openMindsInstance) );
         for i = 1:numel(structInstance)
             structInstance{i} = om.convert.toStruct( openMindsInstance(i), metadataCollection );
@@ -13,7 +13,7 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
     end
 
     % NB: Special case. Todo: Consider to make this more internal.
-    if isa(openMindsInstance, 'openminds.internal.abstract.LinkedCategory')
+    if isa(openMindsInstance, 'openminds.internal.abstract.MixedTypeSet')
         openMindsInstance = openMindsInstance.Instance;
     end
 
@@ -28,7 +28,7 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
     propertyOrder = om.internal.config.getPreferredPropertyOrder( openMindsType );
     structInstance = orderfields(structInstance, propertyOrder);
     
-    metaSchema = openminds.internal.SchemaInspector( openMindsInstance );
+    metaSchema = openminds.internal.meta.Type( openMindsInstance );
 
     % Fill out options for each property
     propNames = fieldnames(structInstance);
@@ -75,7 +75,7 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
                 customFcn = @getConfigForNonScalarValue;
             end
 
-        elseif isa(iValue, 'openminds.internal.abstract.LinkedCategory') % oneOf/anyOf
+        elseif isa(iValue, 'openminds.internal.abstract.MixedTypeSet') % oneOf/anyOf
             if metaSchema.isPropertyValueScalar(iPropName)
                 customFcn = @getConfigForHeterogeneousScalarValue;
             else
@@ -127,7 +127,6 @@ function [value, config] = getConfigForScalarValue(name, value, openMindsInstanc
         "UpstreamInstancePropertyName", name);
 end
 
-
 function [value, config] = getConfigForNonScalarValue(name, value, openMindsInstance, metadataCollection)
 
     % Todo: Use "Upstream..." instead, like for InstanceDropDown
@@ -138,22 +137,23 @@ function [value, config] = getConfigForNonScalarValue(name, value, openMindsInst
     
     items = arrayfun(@(x) string(x), value);
     if isempty(value)
-        value = {value};
+        itemsData = {value};
     else
-        value = num2cell( value );
+        itemsData = num2cell( value );
     end
 
     config = @(h, varargin) om.internal.control.ListControl(h, ...
         'Items', items, ...
         'ItemsData', value, ...
         'EditItemsFcn', editItemsFcn);
+    %value = itemsData;
 end
 
 function [value, config] = getConfigForHeterogeneousScalarValue(name, value, openMindsInstance, metadataCollection)
         
     arguments
         name char
-        value openminds.internal.abstract.LinkedCategory
+        value openminds.internal.abstract.MixedTypeSet
         openMindsInstance openminds.abstract.Schema
         metadataCollection openminds.Collection
     end
@@ -174,14 +174,18 @@ function [value, configFcn] = getConfigForHeterogeneousNonScalarValue(name, valu
         om.uiEditHeterogeneousList(value, propertyTypeName, metadataCollection );
     
     items = arrayfun(@(x) string(x), value);
+
+    % Todo: Clarify why this needs to be a cell array
     if isempty(value)
-        value = {value};
+        itemsData = {value};
     else
-        value = num2cell( value );
+        itemsData = num2cell( value );
     end
 
     configFcn = @(h, varargin) om.internal.control.ListControl(h, ...
         'Items', items, ...
         'ItemsData', value, ...
         'EditItemsFcn', editItemsFcn);
+
+    %value = itemsData;
 end

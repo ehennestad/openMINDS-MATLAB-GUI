@@ -26,7 +26,7 @@ function mustBeTypeClassName(className)
     superclassNames = superclasses(className);
     validSuperclassNames = [...
         "openminds.abstract.Schema", ...
-        "openminds.internal.abstract.LinkedCategory"];
+        "openminds.internal.abstract.MixedTypeSet"];
     isValid = any( ismember(superclassNames, validSuperclassNames) );
 
     assert(isValid, "%s is not a valid class name for an openminds instance", className)

@@ -24,8 +24,8 @@
   <a href="https://github.com/ehennestad/openMINDS-MATLAB-GUI/security/code-scanning">
    <img src=".github/badges/code_issues.svg" alt="Run Code Analyzer">
   </a>
-  <a href="https://github.com/ehennestad/openMINDS-MATLAB-GUI/actions/workflows/run_codespell.yml?query=event%3Apush+branch%3Amain">
-   <img src="https://github.com/ehennestad/openMINDS-MATLAB-GUI/actions/workflows/run_codespell.yml/badge.svg?branch=main" alt="Codespell">
+  <a href="https://github.com/ehennestad/openMINDS-MATLAB-GUI/actions/workflows/run-codespell.yml?query=event%3Apush+branch%3Amain">
+   <img src="https://github.com/ehennestad/openMINDS-MATLAB-GUI/actions/workflows/run-codespell.yml/badge.svg?branch=main" alt="Codespell">
   </a>
 </h4>
 

@@ -9,14 +9,23 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
 
     schemaName = typePathSplit{end-1};
     propertyName = typePathSplit{end};
+    
+    % Sometimes mixed types comes in as "homogeneous" types.
+    metaSchema = openminds.internal.meta.Type( openminds.enum.Types(schemaName).ClassName );
+    if metaSchema.isPropertyMixedType(propertyName)
+        className = metaSchema.getMixedTypeForProperty(propertyName);
+        metadataInstances = feval(className, metadataInstances);
+    end
 
+    IS_SCALAR = metaSchema.isPropertyValueScalar(propertyName);
+    
     if nargin < 3
         metadataCollection = openminds.MetadataCollection();
     end
         
     if iscell(metadataInstances); metadataInstances = [metadataInstances{:}]; end
 
-    isHeterogeneous = isa(metadataInstances, 'openminds.internal.abstract.LinkedCategory');
+    isHeterogeneous = isa(metadataInstances, 'openminds.internal.abstract.MixedTypeSet');
 
     numInstances = numel( metadataInstances );
     if numInstances >= 1
@@ -54,7 +63,8 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
             'Title', title, ...
             'DefaultItem', referenceItems, ...
             "OpenMindsType", class(metadataInstances), ...
-            "MetadataCollection", metadataCollection);
+            "MetadataCollection", metadataCollection, ...
+            "IsScalar", IS_SCALAR);
     else
         propertyName = class(metadataInstances);
         propertyName = openminds.internal.utility.getSchemaShortName(propertyName);
@@ -71,7 +81,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
         end
     end
 
-    uim.utility.centerFigure(editor.UIFigure)
+    uim.utility.centerFigureOnScreen(editor.UIFigure)
     
     uiwait(editor, true)
     
@@ -110,7 +120,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
                     if isa(metadataInstances, 'openminds.abstract.Schema')
                         isInstance = strcmp( {metadataInstances.id}, iData.id );
                         iInstance = metadataInstances(isInstance);
-                    elseif isa(metadataInstances, 'openminds.internal.abstract.LinkedCategory')
+                    elseif isa(metadataInstances, 'openminds.internal.abstract.MixedTypeSet')
                         instanceIds = arrayfun(@(x) x.Instance.id, metadataInstances, 'uni', false);
                         isInstance = strcmp( instanceIds, iData.id );
                         if any(isInstance)
@@ -137,11 +147,12 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
         end
 
         % Convert to openminds instances to get labels...    
-        itemNames = cellfun(@(c) char(c), instances, 'UniformOutput', false);
+        itemNames = cellfun(@(c) string(c), instances, 'UniformOutput', true);
 
         if isHeterogeneous
             mixedTypeName = class(metadataInstances);
-            itemData = num2cell( feval(mixedTypeName, instances) );
+            %itemData = num2cell( feval(mixedTypeName, instances) );
+            itemData = feval(mixedTypeName, instances);
         else
             itemData = instances;
         end

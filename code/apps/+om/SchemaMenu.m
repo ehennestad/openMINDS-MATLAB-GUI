@@ -9,8 +9,8 @@ classdef SchemaMenu < MultiModalMenu
     
     
     properties (Constant, Hidden) % Todo: Abstract
-        ValidModes = {'Single', 'Multiple', 'Help', 'Open'}                 % Available modes
-        DefaultMode = 'Single'
+        ValidModes = {'Single', 'Multiple', 'Help', 'Open', 'View'}                 % Available modes
+        DefaultMode = 'View'
         MenuOrder = {'+core', '+controlledterms'}              % Todo: preference?
     end
 
@@ -21,7 +21,7 @@ classdef SchemaMenu < MultiModalMenu
     
 
     properties (Constant, Hidden)
-        KEY_TO_MODE_MAP = containers.Map( {'', 'n', 'h', 'o'}, {'Single', 'Multiple', 'Help', 'Open'})
+        KEY_TO_MODE_MAP = containers.Map( {'', 'n', 'h', 'o', 'v'}, {'View', 'Multiple', 'Help', 'Open', 'Single'})
     end
 
 

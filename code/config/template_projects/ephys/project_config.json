@@ -1,0 +1,12 @@
+{
+   "x_name": "ephys",
+   "properties": {
+     "models": [
+       "core",
+       "SANDS",
+       "ephys",
+       "specimenprep",
+       "stimulation"
+     ]
+   }
+ }

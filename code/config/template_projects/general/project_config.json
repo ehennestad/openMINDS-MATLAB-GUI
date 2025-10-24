@@ -1,0 +1,6 @@
+{
+   "x_name": "ephys",
+   "properties": {
+     "models": ["all"]
+   }
+ }
