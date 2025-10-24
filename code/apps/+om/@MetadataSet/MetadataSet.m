@@ -216,7 +216,7 @@ classdef MetadataSet < handle & matlab.mixin.CustomDisplay
                             try
                                 % Todo: This needs to be improved!!!
                                 thisValue = thisValue.getDisplayLabel;
-                                options(end+1) = thisValue;
+                                options(end+1) = thisValue; %#ok<AGROW>
                             catch
                                 thisValue = options(1);
                             end
