@@ -27,7 +27,11 @@ classdef UICollection < openminds.Collection
     properties (Access = private)
         EventStates
     end
-    
+
+    properties (Dependent) % Todo
+        ContainedTypes (1,:) string % A list of types present in collection
+    end
+
     events
         CollectionChanged
         InstanceAdded
@@ -742,7 +746,7 @@ classdef UICollection < openminds.Collection
         %
         %   Example:
         %   fullSchemaName = 'openminds.core.research.Subject';
-        %   shortSchemaName = om.MetadataSet.getSchemaShortName(fullSchemaName)
+        %   shortSchemaName = om.ui.UICollection.getSchemaShortName(fullSchemaName)
         %   shortSchemaName =
         %
         %     'Subject'
