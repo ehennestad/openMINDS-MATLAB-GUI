@@ -118,7 +118,9 @@ classdef ListBox < handle
 
     methods (Access = private)
 
-        function onListButtonPressed(obj, src, evt, idx)
+        function onListButtonPressed(obj, src, evt, idx) %#ok<INUSD>
+
+            % Todo: Why is index needed as input
 
             triggerCallback = false;
             oldSelection = {obj.SelectedButtons.Tag};
@@ -179,12 +181,8 @@ classdef ListBox < handle
             % - What listeners?
         end
 
-        function updateSelectedItems(obj, newSelection, force)
+        function updateSelectedItems(obj, newSelection)
         %updateSelectedItems Programmatic entry point for setting items
-            
-            if nargin < 3
-                force = false;
-            end
 
             buttonNames = {obj.Buttons.Text};
             

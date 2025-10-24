@@ -225,9 +225,10 @@ classdef MultiModalMenu < handle
             obj.buildMenuFromDirectory(obj.Figure);
         end
 
-        function refreshMenuItem(obj, menuName)
-            % menuName or functionName ?
-            % Todo...
+        function refreshMenuItem(~, ~)
+        % Todo: Refresh a single menu name given its name, tag or the name
+        % of the function it represents
+            
         end
 
         function addMenuItemForFile(obj, hParent, mFilePath)
@@ -248,8 +249,6 @@ classdef MultiModalMenu < handle
             obj.createMenuCallback(iSubMenu, functionName)
             obj.storeMenuObject(iSubMenu, functionName)
         end
-
-
     end
 
     methods (Access = private) % Methods for changing mode...

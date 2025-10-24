@@ -554,7 +554,7 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
             comp.updateValue(newValue, previousValue)
         end
 
-        function onDropDownOpened(comp, src, evt)
+        function onDropDownOpened(comp, ~, ~)
         % Reset search / filter
             comp.SearchString = '';
             comp.DropDown.Tooltip = comp.SearchString;
@@ -608,7 +608,7 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
             end
         end
     
-        function onMousePressed(comp, src, evt)
+        function onMousePressed(comp, src, ~)
             if src.CurrentObject == comp.DropDown
 
             else
@@ -616,16 +616,16 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
             end
         end
     
-        function onEditInstanceButtonPushed(comp, src, evt)
+        function onEditInstanceButtonPushed(comp, ~, ~)
             comp.editInstance();
         end
 
-        function onChangeTypeButtonPushed(comp, src, evt)
+        function onChangeTypeButtonPushed(comp, ~, evt)
             pos = getpixelposition(evt.Source, true);
             comp.TypeSelectionContextMenu.open(pos(1), pos(2))
         end
 
-        function onTypeSelectionContectMenuClicked(comp, src, evt)
+        function onTypeSelectionContectMenuClicked(comp, ~, evt)
             comp.ActiveMetadataType = evt.SelectedType;
         end
     end

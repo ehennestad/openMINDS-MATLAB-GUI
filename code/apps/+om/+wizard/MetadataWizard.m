@@ -81,7 +81,7 @@ classdef MetadataWizard < wizard.WizardApp
             end
         end
     
-        function doAbort = onFigureCloseRequest(app, event)
+        function doAbort = onFigureCloseRequest(app, ~)
             
             app.promptSaveCurrentChanges()
             app.savePreferences()

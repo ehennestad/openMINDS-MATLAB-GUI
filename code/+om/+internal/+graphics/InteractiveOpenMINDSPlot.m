@@ -37,7 +37,7 @@ classdef InteractiveOpenMINDSPlot < handle
     end
 
     methods
-        function obj = InteractiveOpenMINDSPlot(graphObj, hAxes, e)
+        function obj = InteractiveOpenMINDSPlot(graphObj, hAxes, ~)
             
             obj.DirectedGraph = graphObj;
 
@@ -129,7 +129,7 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.plotMouseOverElements()
         end
 
-        function keyPress(obj, src, event)
+        function keyPress(obj, ~, event)
             wasCaptured = obj.PointerManager.onKeyPress([], event);
         end
     end
@@ -154,7 +154,7 @@ classdef InteractiveOpenMINDSPlot < handle
     end
 
     methods (Access = private)
-        function onWindowMouseMotion(obj, src, evt)
+        function onWindowMouseMotion(obj, src, ~)
 
             h = hittest();
             if isa(h, 'matlab.graphics.chart.primitive.GraphPlot')

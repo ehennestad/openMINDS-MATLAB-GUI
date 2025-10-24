@@ -201,11 +201,7 @@ classdef UICollection < openminds.Collection
             end
             obj.Nodes(instanceId) = {instance};
         end
-
-        function updateMetadata(obj)
-            % Update all metadata
-        end
-
+        
         function createListenersForAllInstances(obj)
         
             keyNames = obj.Nodes.keys();
@@ -597,7 +593,7 @@ classdef UICollection < openminds.Collection
 
     methods (Access = protected) % Methods for getting instances in table representations
         
-        function [leftKey, rightKey] = getKeyPairsForJoin(obj, schemaNameLinker, schemaNameLinkee)
+        function [leftKey, rightKey] = getKeyPairsForJoin(obj, schemaNameLinker, schemaNameLinkee) %#ok<INUSD>
             % Todo
 
             disp('a')

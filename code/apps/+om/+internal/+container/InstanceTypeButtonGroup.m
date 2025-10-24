@@ -87,7 +87,7 @@ classdef InstanceTypeButtonGroup < om.internal.abstract.TypeSelector
 
     methods (Access = private)
 
-        function onTypeSelectorButtonPushed(comp, src, evt)
+        function onTypeSelectorButtonPushed(comp, src, ~)
             
             % Loop through all buttons to toggle them off except the clicked one
             for i = 1:length(comp.UIButtons)
