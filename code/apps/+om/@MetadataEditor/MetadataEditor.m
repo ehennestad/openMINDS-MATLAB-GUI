@@ -288,7 +288,18 @@ classdef MetadataEditor < handle
             obj.UIPanel.Logo = uipanel(obj.Figure);
 
             panels = struct2cell(obj.UIPanel);
-            set([panels{:}], 'Units', 'pixels', 'BackgroundColor', 'w', 'BorderType','etchedin')
+
+            % Compatibility
+            if exist('isMATLABReleaseOlderThan', 'file') ~= 2 || isMATLABReleaseOlderThan('R2025a')
+                borderType = 'etchedin';
+            else
+                borderType = 'line';
+            end
+
+            set([panels{:}], ...
+                'Units', 'pixels', ...
+                'BackgroundColor', 'w', ...
+                'BorderType',borderType)
         end
 
         function createTabGroup(obj)
@@ -810,14 +821,12 @@ classdef MetadataEditor < handle
         end
 
         function logoFilepath = getLogoFilepath()
-            logoUrl = om.common.constant.OpenMindsLogoLightURL;
-            logoURI = matlab.net.URI(logoUrl);
-
-            % Download logo
-            thisFullpathSplit = pathsplit( mfilename("fullpath") );
-            fileName = logoURI.Path(end);
-
-            logoFilepath = fullfile('/',thisFullpathSplit{1:end-2}, fileName);
+            
+            logoFilepath = fullfile(...
+                om.internal.rootpath(), ...
+                'resources', ...
+                'img', ...
+                'openMINDS_logo_light.png');
         end
     end
 
