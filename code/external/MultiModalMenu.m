@@ -323,9 +323,16 @@ classdef MultiModalMenu < handle
             obj.KeyReleasedListener = listener(obj.Figure, ...
                 'WindowKeyRelease', @obj.onKeyReleased);
 
-            [~, hJ] = evalc('findjobj(obj.Figure)');
-            hJ(2).KeyPressedCallback = @obj.onKeyPressed;
-            hJ(2).KeyReleasedCallback = @obj.onKeyReleased;
+            try
+                [~, hJ] = evalc('findjobj(obj.Figure)');
+                hJ(2).KeyPressedCallback = @obj.onKeyPressed;
+                hJ(2).KeyReleasedCallback = @obj.onKeyReleased;
+            catch
+                % This will fail for MATLAB R2025a and later. The
+                % functionality is not critical, and should come up with a
+                % better alternative.
+                % Todo.
+            end
         end
 
         function buildMenuFromDirectory(obj, hParent, dirPath)
