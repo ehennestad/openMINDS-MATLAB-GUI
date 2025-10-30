@@ -32,6 +32,12 @@ classdef InteractiveOpenMINDSPlot < handle
         ActiveNode
     end
 
+    properties (Access = private)
+        IsMouseInGraph (1,1) logical = false
+        IsMouseButtonDown (1,1) logical = false
+        MouseReleaseListener event.listener
+    end
+
     properties (Access = protected)
         MouseMotionListener event.listener
     end
@@ -50,9 +56,8 @@ classdef InteractiveOpenMINDSPlot < handle
 
             obj.updateGraph(graphObj)
 
-            obj.GraphPlot.ButtonDownFcn = ...
-                @(s,e) obj.NodeTransporter.startDrag(s,e);
-
+            obj.GraphPlot.ButtonDownFcn = @obj.onMousePressedInGraph;
+            
             % obj.GraphPlot.EdgeLabel = e;
 
             obj.Axes.YDir = 'normal';
@@ -61,11 +66,22 @@ classdef InteractiveOpenMINDSPlot < handle
                 obj.Axes, {'zoomIn', 'zoomOut', 'pan'});
             addlistener(hFigure, 'WindowKeyPress', @obj.keyPress);
 
-            obj.plotMouseOverElements()
+            %obj.plotMouseOverElements()
+           
 
-            obj.MouseMotionListener = listener(hFigure, "WindowMouseMotion", ...
-                @obj.onWindowMouseMotion);
+            % Does not work for uifigure
+            % obj.MouseMotionListener = listener(hFigure, "WindowMouseMotion", ...
+            %     @obj.onWindowMouseMotion);
             % obj.Axes.YDir = 'reverse';
+
+            %--- Install pointer manager on the figure
+            iptPointerManager(hFigure,'enable');
+
+            %--- Pointer behavior attached to the GRAPH OBJECT
+            pb.enterFcn    = @(fig, h) obj.onMouseMotionInGraph(fig, h);        % default pointer
+            pb.exitFcn     = @(fig, h) obj.hideGraphNodeDataTip(fig);           % hide tooltip
+            pb.traverseFcn = @(fig, h) obj.onMouseMotionInGraph(fig, h);   % update while moving
+            iptSetPointerBehavior(obj.GraphPlot, pb);
         end
     end
 
@@ -127,10 +143,14 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.GraphPlot.NodeLabelColor = [0.2,0.2,0.2];
             obj.GraphPlot.ArrowSize = 6;
             obj.GraphPlot.EdgeAlpha = 0.7;
-            obj.NodeTransporter = GraphNodeTransporter(obj.Axes);
-            obj.GraphPlot.ButtonDownFcn = @(s,e) obj.NodeTransporter.startDrag(s,e);
 
             obj.plotMouseOverElements()
+
+            obj.NodeTransporter = GraphNodeTransporter(obj.Axes);
+            obj.NodeTransporter.ActiveNodeMarker = obj.ActiveNode;
+            obj.NodeTransporter.NodeDataTip = obj.DataTip;
+
+            obj.GraphPlot.ButtonDownFcn = @obj.onMousePressedInGraph;
         end
 
         function keyPress(obj, ~, event)
@@ -140,13 +160,6 @@ classdef InteractiveOpenMINDSPlot < handle
 
     methods (Access = private)
         function plotMouseOverElements(obj)
-            obj.DataTip = text(obj.Axes, 0,0,'', ...
-                'FontSize',14, ...
-                'HitTest', 'off', ...
-                'PickableParts', 'none', ...
-                'Interpreter', 'none');
-            uistack(obj.DataTip, 'top');
-
             obj.ActiveNode = plot(obj.Axes, nan, nan, 'o', ...
                 'HitTest', 'off', ...
                 'PickableParts', 'none', ...
@@ -154,61 +167,111 @@ classdef InteractiveOpenMINDSPlot < handle
                 'MarkerSize', obj.MarkerSize+1, ...
                 'MarkerFaceColor', 'w');
             uistack(obj.ActiveNode, 'top');
+
+            obj.DataTip = text(obj.Axes, 0,0,'', ...
+                'FontSize',14, ...
+                'HitTest', 'off', ...
+                'PickableParts', 'none', ...
+                'Interpreter', 'none');
+            uistack(obj.DataTip, 'top');
         end
     end
 
-    methods (Access = private)
+    methods (Access = private) % Interactive callback methods
         function onWindowMouseMotion(obj, src, ~)
-
             h = hittest();
             if isa(h, 'matlab.graphics.chart.primitive.GraphPlot')
-
                 point = src.CurrentPoint;
-                x = point(1); y = point(2);
-
-                axesPosition = getpixelposition(obj.Axes,true);
-                x = x - axesPosition(1);
-                y = y - axesPosition(2);
-
-                numAxUnitPerPixelX = diff(obj.Axes.XLim) / axesPosition(3);
-                numAxUnitPerPixelY = diff(obj.Axes.YLim) / axesPosition(4);
-
-                xAxesUnit = x * numAxUnitPerPixelX + obj.Axes.XLim(1) ;
-                yAxesUnit = y * numAxUnitPerPixelY + obj.Axes.YLim(1);
-
-                % Find Node Index
-                graphObj = obj.GraphPlot;
-                % graphObj.XData
-                deltaX = diff(obj.Axes.XLim) / axesPosition(3) * 10;
-                deltaY = diff(obj.Axes.YLim) / axesPosition(4) * 10;
-
-                isOnX = abs( graphObj.XData - xAxesUnit ) < deltaX;
-                isOnY = abs( graphObj.YData - yAxesUnit ) < deltaY;
-
-                nodeIdx = find( isOnX & isOnY, 1, 'first');
-
-                if ~isempty(nodeIdx)
-                    % disp(obj.DirectedGraph.Nodes.Name(nodeIdx))
-                    obj.DataTip.Position = [xAxesUnit, yAxesUnit];
-                    obj.DataTip.String = sprintf('%s (%s)', ...
-                        obj.DirectedGraph.Nodes.Label{nodeIdx}, ...
-                        obj.DirectedGraph.Nodes.Type{nodeIdx});
-                    obj.ActiveNode.XData = graphObj.XData(nodeIdx);
-                    obj.ActiveNode.YData = graphObj.YData(nodeIdx);
-                else
-                    obj.DataTip.String = '';
-                    obj.ActiveNode.XData = nan;
-                    obj.ActiveNode.YData = nan;
-                end
+                obj.updateGraphNodeDataTip(point)
             else
-                % obj.DataTip.String = '';
+                obj.hideGraphNodeDataTip(src)
             end
+        end
+
+        function onMousePressedInGraph(obj, src, evt)
+            obj.IsMouseButtonDown = true;
+
+            obj.NodeTransporter.startDrag(src, evt);
+            
+            hFigure = ancestor(obj.Axes, 'figure');
+            obj.MouseReleaseListener = listener(hFigure, ...
+                'WindowMouseRelease', @(src, event) obj.onMouseReleasedFromGraph);
+        end
+
+        function onMouseReleasedFromGraph(obj)
+            obj.IsMouseButtonDown = false;
+
+            if ~isempty(obj.MouseReleaseListener)
+                if isvalid(obj.MouseReleaseListener)
+                    delete(obj.MouseReleaseListener)
+                end
+                obj.MouseReleaseListener = event.listener.empty;
+            end
+        end
+
+        function onMouseMotionInGraph(obj, src, ~)
+            set(src,'Pointer','hand')
+
+            point = src.CurrentPoint;
+            obj.updateGraphNodeDataTip(point)
         end
 
         function onLayoutPropertySet(obj)
             if ~isempty(obj.GraphPlot)
                 obj.updateGraph();
             end
+        end
+    end
+
+    methods (Access = private)
+        function updateGraphNodeDataTip(obj, point)
+            x = point(1); y = point(2);
+
+            axesPosition = getpixelposition(obj.Axes,true);
+            x = x - axesPosition(1);
+            y = y - axesPosition(2);
+
+            numAxUnitPerPixelX = diff(obj.Axes.XLim) / axesPosition(3);
+            numAxUnitPerPixelY = diff(obj.Axes.YLim) / axesPosition(4);
+
+            xAxesUnit = x * numAxUnitPerPixelX + obj.Axes.XLim(1) ;
+            yAxesUnit = y * numAxUnitPerPixelY + obj.Axes.YLim(1);
+
+            % Find Node Index
+            graphObj = obj.GraphPlot;
+            % graphObj.XData
+            deltaX = diff(obj.Axes.XLim) / axesPosition(3) * 10;
+            deltaY = diff(obj.Axes.YLim) / axesPosition(4) * 10;
+
+            isOnX = abs( graphObj.XData - xAxesUnit ) < deltaX;
+            isOnY = abs( graphObj.YData - yAxesUnit ) < deltaY;
+
+            nodeIdx = find( isOnX & isOnY, 1, 'first');
+
+            if ~isempty(nodeIdx)
+                % disp(obj.DirectedGraph.Nodes.Name(nodeIdx))
+                %obj.DataTip.Position = [xAxesUnit, yAxesUnit];
+                obj.DataTip.Position = [graphObj.XData(nodeIdx), graphObj.YData(nodeIdx)];
+                obj.DataTip.String = sprintf('%s (%s)', ...
+                    obj.DirectedGraph.Nodes.Label{nodeIdx}, ...
+                    obj.DirectedGraph.Nodes.Type{nodeIdx});
+                obj.ActiveNode.XData = graphObj.XData(nodeIdx);
+                obj.ActiveNode.YData = graphObj.YData(nodeIdx);
+            else
+                obj.DataTip.String = '';
+                obj.ActiveNode.XData = nan;
+                obj.ActiveNode.YData = nan;
+            end
+        end
+
+        function hideGraphNodeDataTip(obj, hFigure)
+            if obj.IsMouseButtonDown 
+                return
+            end
+            obj.DataTip.String = '';
+            obj.ActiveNode.XData = nan;
+            obj.ActiveNode.YData = nan;
+            set(hFigure,'Pointer','arrow')
         end
     end
 end
