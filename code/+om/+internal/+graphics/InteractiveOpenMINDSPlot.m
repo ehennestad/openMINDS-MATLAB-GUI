@@ -77,6 +77,7 @@ classdef InteractiveOpenMINDSPlot < handle
             %--- Install pointer manager on the figure
             iptPointerManager(hFigure,'enable');
 
+            obj.addPointerBehaviorToGraph()
             %--- Pointer behavior attached to the GRAPH OBJECT
             pb.enterFcn    = @(fig, h) obj.onMouseMotionInGraph(fig, h);        % default pointer
             pb.exitFcn     = @(fig, h) obj.hideGraphNodeDataTip(fig);           % hide tooltip
@@ -98,7 +99,7 @@ classdef InteractiveOpenMINDSPlot < handle
                 obj.DirectedGraph = graphObj;
             end
 
-            if isempty(graphObj.Nodes)
+            if isempty(obj.DirectedGraph.Nodes)
                 return
             end
 
@@ -111,7 +112,7 @@ classdef InteractiveOpenMINDSPlot < handle
             % obj.GraphPlot.NodeLabel = obj.DirectedGraph.Nodes.Name;
             obj.GraphPlot.NodeLabel = [];
             numNodes = obj.DirectedGraph.numnodes;
-            colors = colormap(obj.ColorMap);
+            colors = colormap(obj.Axes, obj.ColorMap);
 
             randIdx = round(randperm(numNodes, numNodes)/numNodes*256);
 
@@ -151,6 +152,7 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.NodeTransporter.NodeDataTip = obj.DataTip;
 
             obj.GraphPlot.ButtonDownFcn = @obj.onMousePressedInGraph;
+            obj.addPointerBehaviorToGraph()
         end
 
         function keyPress(obj, ~, event)
@@ -272,6 +274,14 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.ActiveNode.XData = nan;
             obj.ActiveNode.YData = nan;
             set(hFigure,'Pointer','arrow')
+        end
+    
+        function addPointerBehaviorToGraph(obj)
+            %--- Pointer behavior attached to the GRAPH OBJECT
+            pb.enterFcn    = @(fig, h) obj.onMouseMotionInGraph(fig, h);        % default pointer
+            pb.exitFcn     = @(fig, h) obj.hideGraphNodeDataTip(fig);           % hide tooltip
+            pb.traverseFcn = @(fig, h) obj.onMouseMotionInGraph(fig, h);   % update while moving
+            iptSetPointerBehavior(obj.GraphPlot, pb);
         end
     end
 end
