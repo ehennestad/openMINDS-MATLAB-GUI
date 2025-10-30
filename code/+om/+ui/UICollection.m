@@ -304,6 +304,10 @@ classdef UICollection < openminds.Collection
             obj.graph = digraph;
 
             % Get all instance IDs from the Nodes dictionary
+            if ~isConfigured(obj.Nodes)
+                return
+            end
+
             instanceIds = obj.Nodes.keys();
 
             % First pass: Add all instances as nodes in the graph

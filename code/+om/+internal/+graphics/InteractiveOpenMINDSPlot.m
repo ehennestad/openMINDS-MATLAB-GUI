@@ -82,6 +82,10 @@ classdef InteractiveOpenMINDSPlot < handle
                 obj.DirectedGraph = graphObj;
             end
 
+            if isempty(graphObj.Nodes)
+                return
+            end
+
             delete( obj.GraphPlot )
             hold(obj.Axes, 'off')
 
