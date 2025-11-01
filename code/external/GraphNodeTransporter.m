@@ -3,10 +3,11 @@ classdef GraphNodeTransporter < applify.gobjectTransporter
 
     properties
         CurrentNodeIndex = []
+        ActiveNodeMarker = []
+        NodeDataTip = []
     end
 
     methods
-            
         function startDrag(obj, src, event)
 
             % NB: Call this before assigning moveObject callback. Update
@@ -51,15 +52,20 @@ classdef GraphNodeTransporter < applify.gobjectTransporter
             h.XData(i) = h.XData(i) + shift(1);
             h.YData(i) = h.YData(i) + shift(2);
 
-            obj.previousMousePointAxes = newMousePointAx;
+            if ~isempty(obj.ActiveNodeMarker)
+                obj.ActiveNodeMarker.XData = obj.ActiveNodeMarker.XData + shift(1);
+                obj.ActiveNodeMarker.YData = obj.ActiveNodeMarker.YData + shift(2);
+            end
+            if ~isempty(obj.NodeDataTip)
+                obj.NodeDataTip.Position(1:2) = obj.NodeDataTip.Position(1:2) + shift;
+            end
 
+            obj.previousMousePointAxes = newMousePointAx;
         end
 
         function stopDrag(obj)
             obj.isMouseDown = false;
             obj.resetInteractiveFigureListeners()
         end
-
     end
-
 end

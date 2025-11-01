@@ -1,28 +1,17 @@
-classdef MetadataEditor < handle
+classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 %
 %   TODO:
 %       [x] Save figure size to app settings
-%       [x] Save metadata set
 %       [ ] Sidebar should be populated with collection types, or top 10 collection types....?
 %       [ ] Fill out all linked types which are not controlled terms with
 %           categoricals where each value is a id/label for one of the linked
 %           types...
 %       [ ] Add label for required properties in table columns and editor...
-%       [ ] Check out BCCN
-%       [ ] Move +category to +openminds
-%       [ ] Fix broken controlled terms
-%       [ ] Add way to have array of linked types on property
 %       [ ] Add incoming links for schemas
 %       [ ] Get label/id as method on Schema class
 %       [ ] In table view, show connected nodes, in graph view, show all
 %           available, or show predefined templates...
 %       [ ] Dynamic listbox on left side panel
-%
-%       [ ] Treat embedded types and linked types differently. Embedded
-%           types are not added to the set, but only added to schema
-%           instances. Should embedded types be value classes.
-%
-%       [ ] Linked types are just links...
 
 % ABBREVIATIONS:
 %
@@ -58,6 +47,7 @@ classdef MetadataEditor < handle
 
     properties (Access = private)
         SchemaMenu
+        RecentCollectionsMenu  % Menu handle for recent collections submenu
     end
 
     properties (Access = private)
@@ -88,18 +78,24 @@ classdef MetadataEditor < handle
                 % obj.MetadataCollection.createListenersForAllInstances()
             end
 
-            obj.createFigure()
+            obj.createFigure();
+            [dlg, dlgCleanup] = obj.uiprogressdlg('Creating layout...', ...
+                'Title', 'Creating App', ...
+                'Indeterminate', 'on'); %#ok<ASGLU>
+            drawnow
+
+            dlg.Message = 'Creating layout...';
             obj.createPanels()
-
             obj.updateLayoutPositions()
-
             obj.createTabGroup()
+            
+            dlg.Message = 'Creating sidebar...';
             obj.createCreateNewButton()
-
             typeSelections = obj.loadTypeQuickSelection();
             obj.createSchemaSelectorSidebar(typeSelections)
             obj.plotOpenMindsLogo()
 
+            dlg.Message = 'Creating graph viewer...';
             hAxes = axes(obj.UIContainer.UITab(2));
             hAxes.Position = [0,0,0.999,1];
 
@@ -118,19 +114,25 @@ classdef MetadataEditor < handle
             % NB NB NB: Some weird bug occurs if this is created before the
             % axes with the graph plot, where the axes current point seems
             % to be reversed in the y-dimension.
+            dlg.Message = 'Creating table viewer...';
             obj.initializeTableViewer()
-
             obj.initializeTableContextMenu()
 
+            dlg.Message = 'Creating menus...';
             obj.createMainMenu()
 
+            dlg.Message = 'Rendering...';
             % Add these callbacks after every component is made
-            obj.Figure.SizeChangedFcn = @(s, e) obj.onFigureSizeChanged;
+            if obj.requiresCompatibilityMode()
+                obj.Figure.SizeChangedFcn = @(s, e) obj.onFigureSizeChanged;
+            end
             obj.Figure.CloseRequestFcn = @obj.onExit;
 
             obj.changeSelection('DatasetVersion')
 
             obj.configureFigureInteractionCallbacks()
+
+            drawnow
 
             if ~nargout
                 clear obj
@@ -251,6 +253,13 @@ classdef MetadataEditor < handle
     end
 
     methods (Access = private) % Internal utility methods
+
+        function tf = requiresCompatibilityMode(obj) %#ok<MANU>
+            %tf = true; return
+            tf = exist('isMATLABReleaseOlderThan', 'file') ~= 2 ...
+                    || isMATLABReleaseOlderThan("R2023a");
+        end
+
         function exportToWorkspace(obj)
             schemaName = obj.CurrentSchemaTableName;
             idx = obj.UIMetaTableViewer.getSelectedEntries();
@@ -273,7 +282,11 @@ classdef MetadataEditor < handle
 
         function createFigure(obj)
             windowPosition = obj.getWindowPosition();
-            obj.Figure = figure('Position', windowPosition);
+            if obj.requiresCompatibilityMode()
+                obj.Figure = figure('Position', windowPosition);
+            else
+                obj.Figure = uifigure('Position', windowPosition);
+            end
             obj.Figure.Name = 'openMINDS';
             obj.Figure.NumberTitle = 'off';
             obj.Figure.MenuBar = 'none';
@@ -290,7 +303,7 @@ classdef MetadataEditor < handle
             panels = struct2cell(obj.UIPanel);
 
             % Compatibility
-            if exist('isMATLABReleaseOlderThan', 'file') ~= 2 || isMATLABReleaseOlderThan('R2025a')
+            if obj.requiresCompatibilityMode()
                 borderType = 'etchedin';
             else
                 borderType = 'line';
@@ -307,6 +320,7 @@ classdef MetadataEditor < handle
 
             obj.UIContainer.TabGroup = uitabgroup(obj.UIPanel.Table);
             obj.UIContainer.TabGroup.Units = 'normalized';
+            obj.UIContainer.TabGroup.Position = [0,0,1,1];
 
             obj.UIContainer.UITab = gobjects(0);
 
@@ -323,7 +337,24 @@ classdef MetadataEditor < handle
         function createMainMenu(obj)
 
             m = uimenu(obj.Figure, 'Text', 'openMINDS GUIDE');
-            mItem = uimenu(m, 'Text', 'Select project type');
+
+            % Open/save/import/export
+            obj.RecentCollectionsMenu = uimenu(m, 'Text', 'Open recent collection');
+            obj.updateRecentCollectionsMenu();
+            
+            mItem = uimenu(m, 'Text', 'Open collection...', 'Accelerator', 'o');
+            mItem.Callback = @(s,e) obj.menuCallback_OpenCollection;
+            
+            mItem = uimenu(m, 'Text', 'Save collection', 'Accelerator', 's', 'Separator', 'on');
+            mItem.Callback = @(s,e) obj.menuCallback_SaveCollection;
+
+            mItem = uimenu(m, 'Text', 'Save collection as...', 'Accelerator', 'w');
+            mItem.Callback = @(s,e) obj.menuCallback_SaveCollectionAs;
+
+            mItem = uimenu(m, 'Text', 'Export collection...', 'Accelerator', 'e');
+            mItem.Callback = @(s,e) obj.menuCallback_ExportCollection;
+
+            mItem = uimenu(m, 'Text', 'Select project type', 'Separator', 'on');
             L = recursiveDir( fullfile(om.internal.rootpath, 'config', 'template_projects'), 'Type','folder');
             for i = 1:numel(L)
                 mSubItem = uimenu(mItem, "Text", L(i).name);
@@ -335,6 +366,17 @@ classdef MetadataEditor < handle
             for i = 1:numel(layoutOptions)
                 mSubItem = uimenu(mItem, "Text", layoutOptions(i));
                 mSubItem.Callback = @obj.onGraphLayoutChanged;
+            end
+
+            mItem = uimenu(m, 'Text', 'MenuSelectionMode', 'Separator', 'on');
+            modeOptions = ["Default", "Create Multiple"];
+            accelerators = ["d", "n"];
+            for i = 1:numel(modeOptions)
+                mSubItem = uimenu(mItem, "Text", modeOptions(i), "Accelerator", accelerators(i));
+                mSubItem.Callback = @obj.onMenuModeChanged;
+                if i == 1
+                    mSubItem.Checked = 'on';
+                end
             end
 
             % Create a separator
@@ -358,7 +400,7 @@ classdef MetadataEditor < handle
             obj.UIButtonCreateNew.Callback = @obj.onCreateNewButtonPressed;
             obj.UIButtonCreateNew.Units = 'normalized';
             obj.UIButtonCreateNew.Position = [0,0,1,1];
-            obj.UIButtonCreateNew.FontWeight = 'bold';
+            %obj.UIButtonCreateNew.FontWeight = 'bold';
             obj.UIButtonCreateNew.FontSize = 14;
 
             % obj.UIButtonCreateNew.BackgroundColor = [0,231,102]/255;
@@ -374,7 +416,7 @@ classdef MetadataEditor < handle
             end
 
             sideBar = om.gui.control.ListBox(obj.UIPanel.SidebarL, schemaTypes);
-            sideBar.SelectionChangedFcn = @obj.onSelectionChanged;
+            sideBar.SelectionChangedFcn = @obj.onTypeSelectionChanged;
             obj.UISideBar = sideBar;
         end
 
@@ -387,8 +429,15 @@ classdef MetadataEditor < handle
             % creating meta table viewer. Todo: Should not be necessary
             nansen.internal.user.NansenUserSession.instance();
 
-            h = nansen.MetaTableViewer( obj.UIContainer.UITab(1), [], nvPairs{:});
-            h.HTable.KeyPressFcn = @obj.onKeyPressed;
+            if obj.requiresCompatibilityMode()
+                h = nansen.MetaTableViewer( obj.UIContainer.UITab(1), [], nvPairs{:});
+                h.HTable.KeyPressFcn = @obj.onKeyPressed;
+            else
+                % Use new uitable-based implementation with same constructor signature
+                h = om.internal.control.UIMetaTable(obj.UIContainer.UITab(1), [], nvPairs{:});
+                h.KeyPressCallback = @obj.onKeyPressed;
+            end
+
             obj.UIMetaTableViewer = h;
 
             colSettings = h.ColumnSettings;
@@ -411,7 +460,6 @@ classdef MetadataEditor < handle
         %plotLogo Plot openMINDS logo in the logo panel
 
             % Load the logo from file
-            logoFilename = 'light_openMINDS-logo.png';
             logoFilename = om.MetadataEditor.getLogoFilepath();
 
             if ~exist(logoFilename, 'file')
@@ -433,6 +481,9 @@ classdef MetadataEditor < handle
             ax.Color = 'white';
             ax.YDir = 'reverse';
             ax.Visible = 'off';
+            hold(ax, 'on')
+            om.internal.graphics.centerImageInAxes(ax, hImage)
+            om.internal.graphics.disableAxesToolbar(ax)
         end
 
         function configureFigureInteractionCallbacks(obj)
@@ -477,6 +528,9 @@ classdef MetadataEditor < handle
                 S = load(metadataFilepath, 'MetadataCollection');
                 obj.MetadataCollection = S.MetadataCollection;
                 % obj.MetadataCollection.createListenersForAllInstances()
+                
+                % Add to recent collections when loading at startup
+                om.internal.RecentFileManager.addRecentFile('collections', metadataFilepath);
             else
                 obj.MetadataCollection = om.ui.UICollection();
             end
@@ -516,10 +570,13 @@ classdef MetadataEditor < handle
             propName = obj.UIMetaTableViewer.MetaTable.Properties.VariableNames{evt.Indices(2)};
 
             propValue = evt.NewValue;
+            if iscategorical(propValue) % Instances might be represented as categorical in ui
+                propValue = string(propValue);
+            end
             obj.MetadataCollection.modifyInstance(instanceID, propName, propValue);
         end
 
-        function onSelectionChanged(obj, ~, evt)
+        function onTypeSelectionChanged(obj, ~, evt)
 
             selectedTypes = evt.NewSelection;
             obj.CurrentSchemaTableName = selectedTypes;
@@ -532,8 +589,8 @@ classdef MetadataEditor < handle
             else
                 metaTable = obj.MetadataCollection.joinTables(selectedTypes);
             end
-            obj.updateUITable(metaTable)
             obj.UIMetaTableViewer.MetaTableType = string(schemaType);
+            obj.updateUITable(metaTable)
         end
 
         function onFigureSizeChanged(app)
@@ -569,6 +626,19 @@ classdef MetadataEditor < handle
             set([src.Parent.Children], 'Checked', 'off')
             src.Checked = 'on';
             obj.UIGraphViewer.Layout = src.Text;
+        end
+
+        function onMenuModeChanged(obj, src, ~)
+            set([src.Parent.Children], 'Checked', 'off')
+            src.Checked = 'on';
+
+            switch src.Text
+                case 'Default'
+                    obj.SchemaMenu.Mode = "View";
+                case 'Create Multiple'
+                    obj.SchemaMenu.Mode = "Multiple";
+
+            end
         end
 
         function onSchemaMenuItemSelected(obj, functionName, selectionMode)
@@ -687,6 +757,11 @@ classdef MetadataEditor < handle
 
             if any( isMatch )
                 if isa(TVA(isMatch).DoubleClickFunctionName, 'function_handle')
+
+                    if ~obj.requiresCompatibilityMode
+                        h = uiprogressdlg(obj.Figure, "Indeterminate", "on", "Message", "Opening metadata form...");
+                    end
+
                     fcnHandle = TVA(isMatch).DoubleClickFunctionName;
 
                     instanceID = obj.CurrentTableInstanceIds{thisRow};
@@ -705,14 +780,22 @@ classdef MetadataEditor < handle
 
                         obj.UIMetaTableViewer.updateCells(thisRow, thisColIdxView, {newValueStr})
                     end
+                    if ~obj.requiresCompatibilityMode
+                        delete(h)
+                    end
                     % keyboard
 
                 else
                     error('Not supported')
                 end
             else
-                evt.HitObject.ColumnEditable(thisCol)=true;
-                evt.HitObject.JTable.editCellAt(thisRow-1, thisCol-1);
+                if obj.requiresCompatibilityMode()
+                    % Todo: pass back to table viewer.
+                    % Make cell editable on double click. Only relevant for
+                    % compatibility table
+                    evt.HitObject.ColumnEditable(thisCol) = true;
+                    evt.HitObject.JTable.editCellAt(thisRow-1, thisCol-1);
+                end
             end
         end
     end
@@ -753,20 +836,25 @@ classdef MetadataEditor < handle
                 metaSchema = openminds.internal.meta.Type( instance );
 
                 for i = 1:numel(varNames)
-                    if openminds.utility.isInstance( instance.(varNames{i}) ) && ...
-                            ~isa(instance.(varNames{i}), 'openminds.abstract.ControlledTerm')
-
-                        if metaSchema.isPropertyValueScalar(varNames{i})
-                            S(i).HasOptions = true;
-                            S(i).OptionsList = {{'<Select>', '<Create>', '<Download>'}}; % Todo
+                    if openminds.utility.isInstance( instance.(varNames{i}) )
+                    
+                        if isa(instance.(varNames{i}), 'openminds.abstract.ControlledTerm')
+                            S(i).IsEditable = true;
                         else
-                            propertyTypeName = instance.X_TYPE + "/" + varNames{i};
-
-                            S(i).IsEditable = false;
-                            S(i).HasDoubleClickFunction = true;
-                            S(i).DoubleClickFunctionName = @(value, varargin) ...
-                                om.uiEditHeterogeneousList(value, propertyTypeName, obj.MetadataCollection );
+                            if metaSchema.isPropertyValueScalar(varNames{i})
+                                S(i).HasOptions = true;
+                                S(i).OptionsList = {{'<Select>', '<Create>', '<Download>'}}; % Todo
+                                S(i).IsEditable = false;
+                            else
+                                propertyTypeName = instance.X_TYPE + "/" + varNames{i};
+    
+                                S(i).IsEditable = false;
+                                S(i).HasDoubleClickFunction = true;
+                                S(i).DoubleClickFunctionName = @(value, varargin) ...
+                                    om.uiEditHeterogeneousList(value, propertyTypeName, obj.MetadataCollection );
+                            end
                         end
+
                     elseif openminds.utility.isMixedInstance( instance.(varNames{i}) )
 
                         propertyTypeName = instance.X_TYPE + "/" + varNames{i};
@@ -777,12 +865,225 @@ classdef MetadataEditor < handle
                             om.uiEditHeterogeneousList(value, propertyTypeName, obj.MetadataCollection );
 
                         % continue
+                    else
+                        if ~strcmp(varNames{i}, 'id') % ID is not editable
+                            S(i).IsEditable = true;
+                        end
                     end
                 end
 
                 tableVariableAttributes = S;
             else
                 tableVariableAttributes = TableVariable.getDefaultTableVariableAttribute();
+            end
+        end
+    end
+
+    methods (Access = private) % Menu callback methods
+        function menuCallback_SaveCollection(obj)
+            % Save collection to its current location
+            filepath = obj.getMetadataCollectionFilepath();
+            om.command.saveMetadataCollection(obj.MetadataCollection, filepath);
+            
+            % Add to recent collections and update menu
+            om.internal.RecentFileManager.addRecentFile('collections', filepath);
+            obj.updateRecentCollectionsMenu();
+        end
+
+        function menuCallback_SaveCollectionAs(obj)
+            collection = obj.MetadataCollection;
+            filePath = om.command.saveMetadataCollectionAs(collection);
+
+            % Update recent collections menu if save was successful
+            if ~isempty(filePath)
+                om.internal.RecentFileManager.addRecentFile('collections', filePath);
+                obj.updateRecentCollectionsMenu();
+            end
+        end
+
+        function menuCallback_ExportCollection(obj)
+            try
+                [dlg, dlgCleanup] = obj.uiprogressdlg('Opening export dialog...'); %#ok<ASGLU> : Cleanup handle
+                om.command.exportMetadataCollection(obj.MetadataCollection, ...
+                    "ReferenceWindow", obj.Figure)
+            catch ME
+                delete(dlg)
+                obj.error(ME.message, 'Error During Export')
+            end
+        end
+        
+        function menuCallback_OpenCollection(obj)
+            % Open a metadata collection from file
+            try
+                [collection, filepath] = om.command.openMetadataCollection();
+                
+                if ~isempty(collection) && ~isempty(filepath)
+                    % Convert to UICollection if needed
+                    if isa(collection, 'openminds.Collection')
+                        collection = om.ui.UICollection.fromCollection(collection);
+                    end
+                    
+                    % Update the editor with the new collection
+                    obj.MetadataCollection = collection;
+                    
+                    % Add to recent collections and update the UI
+                    om.internal.RecentFileManager.addRecentFile('collections', filepath);
+                    obj.updateRecentCollectionsMenu();
+                    
+                    % Refresh the graph and table views
+                    G = obj.MetadataCollection.graph;
+                    obj.UIGraphViewer.updateGraph(G);
+                    
+                    % Update current selection if possible
+                    if ~isempty(obj.CurrentSchemaTableName)
+                        % Can we do this more efficiently?
+                        [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
+                        obj.CurrentTableInstanceIds = ids;
+                        obj.updateUITable(T);
+                    end
+                    
+                    fprintf('Collection loaded successfully from: %s\n', filepath);
+                end
+            catch ME
+                obj.error(ME.message, 'Error Opening Collection')
+            end
+        end
+        
+        function menuCallback_OpenRecentCollection(obj, filepath)
+            % Open a specific recent collection
+            try
+                if ~isfile(filepath)
+                    % File doesn't exist anymore, ask user to remove it
+                    answer = questdlg(...
+                        sprintf('The file no longer exists:\n%s\n\nRemove from recent list?', filepath), ...
+                        'File Not Found', ...
+                        'Remove', 'Cancel', 'Remove');
+                    
+                    if strcmp(answer, 'Remove')
+                        om.internal.RecentFileManager.removeRecentFile('collections', filepath);
+                        obj.updateRecentCollectionsMenu();
+                    end
+                    return
+                end
+                
+                % Load the collection using the command
+                [collection, ~] = om.command.openMetadataCollection(filepath);
+                
+                if ~isempty(collection)
+                    % Convert to UICollection if needed
+                    if isa(collection, 'openminds.Collection')
+                        collection = om.ui.UICollection.fromCollection(collection);
+                    end
+                    
+                    % Update the editor with the new collection
+                    obj.MetadataCollection = collection;
+                    
+                    % Add to recent collections (moves to top) and update the UI
+                    om.internal.RecentFileManager.addRecentFile('collections', filepath);
+                    obj.updateRecentCollectionsMenu();
+                    
+                    % Refresh the graph and table views
+                    G = obj.MetadataCollection.graph;
+                    obj.UIGraphViewer.updateGraph(G);
+                    
+                    % Update current selection if possible
+                    if ~isempty(obj.CurrentSchemaTableName)
+                        [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
+                        obj.CurrentTableInstanceIds = ids;
+                        obj.updateUITable(T);
+                    end
+                    
+                    fprintf('Collection loaded successfully from: %s\n', filepath);
+                end
+            catch ME
+                obj.error(ME.message, 'Error Opening Recent Collection')
+            end
+        end
+        
+        function menuCallback_ClearRecentCollections(obj)
+            % Clear the recent collections list
+            answer = questdlg(...
+                'Clear all recent collections from the list?', ...
+                'Clear Recent Collections', ...
+                'Clear', 'Cancel', 'Cancel');
+            
+            if strcmp(answer, 'Clear')
+                om.internal.RecentFileManager.clearRecentFiles('collections');
+                obj.updateRecentCollectionsMenu();
+            end
+        end
+        
+        function updateRecentCollectionsMenu(obj)
+            % Update the recent collections submenu
+            
+            % Delete existing submenu items
+            delete(obj.RecentCollectionsMenu.Children);
+            
+            % Get recent collections list
+            recentList = om.internal.RecentFileManager.getRecentFiles('collections');
+            
+            if isempty(recentList)
+                % Show "(empty)" item
+                mItem = uimenu(obj.RecentCollectionsMenu, 'Text', '(empty)');
+                mItem.Enable = 'off';
+            else
+                % Add each recent collection
+                for i = 1:numel(recentList)
+                    filepath = recentList(i).filepath;
+                    
+                    % Create display name
+                    if isfield(recentList(i), 'name') && ~isempty(recentList(i).name)
+                        displayName = recentList(i).name;
+                    else
+                        % Use abbreviated path
+                        displayName = obj.getAbbreviatedPath(filepath);
+                    end
+                    
+                    % Add accelerator for first 9 items
+                    if i <= 9
+                        accelerator = sprintf('%d', i);
+                    else
+                        accelerator = '';
+                    end
+                    
+                    % Create menu item
+                    mItem = uimenu(obj.RecentCollectionsMenu, ...
+                        'Text', displayName, ...
+                        'Accelerator', accelerator, ...
+                        'MenuSelectedFcn', @(s,e) obj.menuCallback_OpenRecentCollection(filepath));
+                    
+                    % Add tooltip with full path
+                    if isprop(mItem, 'Tooltip')
+                        mItem.Tooltip = filepath;
+                    end
+                    
+                    % Disable if file doesn't exist
+                    if ~recentList(i).exists
+                        mItem.Enable = 'off';
+                        mItem.Text = [displayName, ' (missing)'];
+                    end
+                end
+                
+                % Add separator and "Clear Recent" option
+                uimenu(obj.RecentCollectionsMenu, 'Separator', 'on', ...
+                    'Text', 'Clear Recent Collections', ...
+                    'MenuSelectedFcn', @(s,e) obj.menuCallback_ClearRecentCollections());
+            end
+        end
+    end
+    
+    methods (Access = private) % Helper methods for recent collections
+        function abbrevPath = getAbbreviatedPath(obj, filepath) %#ok<INUSL>
+            % Get abbreviated path for display (e.g., .../parent/filename.mat)
+            
+            [pathParts] = strsplit(filepath, filesep);
+            
+            if numel(pathParts) <= 3
+                % Short path, show all
+                abbrevPath = filepath;
+            else
+                % Show last 2 components with ellipsis
+                abbrevPath = fullfile('...', pathParts{end-1}, pathParts{end});
             end
         end
     end
