@@ -25,7 +25,7 @@ jobs:
     uses: ehennestad/matbox-actions/.github/workflows/test-code-workflow.yml@v1
     with:
       source_directory: code
-      tests_directory: tools/tests
+      tests_directory: tests
       tools_directory: tools
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN}}
