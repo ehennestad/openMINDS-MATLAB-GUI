@@ -29,7 +29,7 @@ function exportMetadataCollection(metadataCollection, filepath, options)
     arguments
         metadataCollection
         filepath char = ''
-        options.ReferenceWindow
+        options.ReferenceWindow %#ok<INUSA> Todo
     end
     
     % Validate that the metadata collection is provided
@@ -135,7 +135,7 @@ function exportWithOptionsDialog(collection)
         outputFolder = exportOptions.OutputPath;
         
         % Create subfolder with timestamp to avoid overwriting
-        timestamp = datestr(now, 'yyyymmdd_HHMMSS');
+        timestamp = char(datetime('now', 'Format', 'yyyyMMdd_HHmmss'));
         outputFolder = fullfile(outputFolder, ['export_', timestamp]);
         
         if ~isfolder(outputFolder)

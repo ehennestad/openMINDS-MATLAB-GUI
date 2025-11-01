@@ -67,7 +67,7 @@ function filepath = saveMetadataCollectionAs(metadataCollection, defaultFilename
     end
     
     % Save the metadata collection to the selected file
-    MetadataCollection = metadataCollection; %#ok<NASGU>
+    MetadataCollection = metadataCollection;
     save(filepath, 'MetadataCollection');
     
     fprintf('Metadata collection saved to %s\n', filepath);

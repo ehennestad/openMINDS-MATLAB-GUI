@@ -247,7 +247,7 @@ classdef HasDialogs < handle
         %       MultiSelect - 'on' or 'off'
         
             arguments
-                obj
+                obj %#ok<*INUSA>
                 options.FilterSpec = '*.*'
                 options.Title {mustBeTextScalar} = "Select File"
                 options.DefaultName {mustBeTextScalar} = ""
