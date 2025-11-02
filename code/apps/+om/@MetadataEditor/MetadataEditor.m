@@ -52,6 +52,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
     properties (Access = private)
         CurrentTableInstanceIds
+        HasUnsavedChanges logical = false  % Flag to track unsaved changes
     end
 
     properties (Access = private, Dependent)
@@ -75,6 +76,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                     metadataCollection = om.ui.UICollection.fromCollection(metadataCollection);
                 end
                 obj.MetadataCollection = metadataCollection;
+                obj.HasUnsavedChanges = false;  % Reset flag when loading from constructor
                 % obj.MetadataCollection.createListenersForAllInstances()
             end
 
@@ -162,8 +164,12 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         end
 
         function onExit(obj, ~, ~)
-            obj.saveMetadataCollection()
-            obj.saveGraphCoordinates() % Todo
+            % Check for unsaved changes before closing
+            if ~obj.checkUnsavedChanges()
+                return  % User cancelled the close operation
+            end
+
+            obj.saveGraphCoordinates() % Todo. Needed?
 
             windowPosition = obj.Figure.Position;
             setpref('openMINDS', 'WindowSize', windowPosition)
@@ -260,6 +266,40 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                     || isMATLABReleaseOlderThan("R2023a");
         end
 
+        function shouldContinue = checkUnsavedChanges(obj)
+            %checkUnsavedChanges Check if there are unsaved changes and prompt user
+            %   Returns true if operation should continue (either no changes or user chose to discard/save)
+            %   Returns false if user cancelled the operation
+            
+            shouldContinue = true;  % Default: continue
+            
+            if ~obj.HasUnsavedChanges
+                return  % No unsaved changes, continue
+            end
+            
+            % Prompt user about unsaved changes using HasDialogs mixin
+            selection = obj.uiconfirm(...
+                'The current collection has unsaved changes. What would you like to do?', ...
+                'Unsaved Changes', ...
+                'Options', {'Save', 'Discard', 'Cancel'}, ...
+                'DefaultOption', 1, ...
+                'CancelOption', 3, ...
+                'Icon', 'warning');
+            
+            switch selection
+                case 'Save'
+                    % Save the collection
+                    obj.menuCallback_SaveCollection();
+                    shouldContinue = true;
+                case 'Discard'
+                    % Continue without saving
+                    shouldContinue = true;
+                case 'Cancel'
+                    % User cancelled, don't continue
+                    shouldContinue = false;
+            end
+        end
+
         function exportToWorkspace(obj)
             schemaName = obj.CurrentSchemaTableName;
             idx = obj.UIMetaTableViewer.getSelectedEntries();
@@ -339,6 +379,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             m = uimenu(obj.Figure, 'Text', 'openMINDS GUIDE');
 
             % Open/save/import/export
+            mItem = uimenu(m, 'Text', 'New collection', 'Accelerator', 'n');
+            mItem.Callback = @(s,e) obj.menuCallback_NewCollection;
+            
             obj.RecentCollectionsMenu = uimenu(m, 'Text', 'Open recent collection');
             obj.updateRecentCollectionsMenu();
 
@@ -370,7 +413,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             mItem = uimenu(m, 'Text', 'MenuSelectionMode', 'Separator', 'on');
             modeOptions = ["Default", "Create Multiple"];
-            accelerators = ["d", "n"];
+            accelerators = ["d", "m"];
             for i = 1:numel(modeOptions)
                 mSubItem = uimenu(mItem, "Text", modeOptions(i), "Accelerator", accelerators(i));
                 mSubItem.Callback = @obj.onMenuModeChanged;
@@ -380,7 +423,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             end
 
             % Create a separator
-            m = uimenu(obj.Figure, 'Text', '|', 'Enable', 'off');
+            hSeparator = uimenu(obj.Figure, 'Text', '|', 'Enable', 'off');
 
             % Todo: Get model version from preferences...
             modelRoot = fullfile(openminds.internal.rootpath, 'types', 'latest', '+openminds');
@@ -519,6 +562,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             MetadataCollection = obj.MetadataCollection; %#ok<PROP>
             save(metadataFilepath, 'MetadataCollection')
+            obj.HasUnsavedChanges = false;  % Clear unsaved changes flag
             % Todo: Are listeners saved???
         end
 
@@ -534,6 +578,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             else
                 obj.MetadataCollection = om.ui.UICollection();
             end
+            
+            % Reset unsaved changes flag when loading
+            obj.HasUnsavedChanges = false;
 
 % % %             % Reattach listeners
 % % %             addlistener(obj.MetadataCollection, 'CollectionChanged', ...
@@ -693,7 +740,8 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         end
 
         function onMetadataCollectionChanged(obj, ~, ~)
-
+            obj.HasUnsavedChanges = true;  % Mark as having unsaved changes
+            
             G = obj.MetadataCollection.graph;
             obj.UIGraphViewer.updateGraph(G);
 
@@ -703,7 +751,8 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         end
 
         function onMetadataInstanceModified(obj, ~, ~)
-
+            obj.HasUnsavedChanges = true;  % Mark as having unsaved changes
+            
             G = obj.MetadataCollection.graph;
             obj.UIGraphViewer.updateGraph(G);
 
@@ -879,10 +928,34 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
     end
 
     methods (Access = private) % Menu callback methods
+        function menuCallback_NewCollection(obj)
+            % Create a new metadata collection
+            
+            % Check for unsaved changes before creating a new collection
+            if ~obj.checkUnsavedChanges()
+                return  % User cancelled the operation
+            end
+            
+            % Create a new empty collection
+            obj.MetadataCollection = om.ui.UICollection();
+            obj.HasUnsavedChanges = false;  % New collection starts with no unsaved changes
+            
+            % Clear the graph and table views
+            G = obj.MetadataCollection.graph;
+            obj.UIGraphViewer.updateGraph(G);
+            
+            % Reset the current table
+            obj.CurrentTableInstanceIds = {};
+            obj.updateUITable(table.empty);
+            
+            fprintf('New collection created.\n');
+        end
+        
         function menuCallback_SaveCollection(obj)
             % Save collection to its current location
             filepath = obj.getMetadataCollectionFilepath();
             om.command.saveMetadataCollection(obj.MetadataCollection, filepath);
+            obj.HasUnsavedChanges = false;  % Clear unsaved changes flag
 
             % Add to recent collections and update menu
             om.internal.RecentFileManager.addRecentFile('collections', filepath);
@@ -895,6 +968,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             % Update recent collections menu if save was successful
             if ~isempty(filePath)
+                obj.HasUnsavedChanges = false;  % Clear unsaved changes flag
                 om.internal.RecentFileManager.addRecentFile('collections', filePath);
                 obj.updateRecentCollectionsMenu();
             end
@@ -913,6 +987,12 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
         function menuCallback_OpenCollection(obj)
             % Open a metadata collection from file
+            
+            % Check for unsaved changes before opening a new collection
+            if ~obj.checkUnsavedChanges()
+                return  % User cancelled the operation
+            end
+            
             try
                 [collection, filepath] = om.command.openMetadataCollection();
 
@@ -924,6 +1004,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
                     % Update the editor with the new collection
                     obj.MetadataCollection = collection;
+                    obj.HasUnsavedChanges = false;  % Reset unsaved changes flag
 
                     % Add to recent collections and update the UI
                     om.internal.RecentFileManager.addRecentFile('collections', filepath);
@@ -950,6 +1031,12 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
         function menuCallback_OpenRecentCollection(obj, filepath)
             % Open a specific recent collection
+            
+            % Check for unsaved changes before opening a new collection
+            if ~obj.checkUnsavedChanges()
+                return  % User cancelled the operation
+            end
+            
             try
                 if ~isfile(filepath)
                     % File doesn't exist anymore, ask user to remove it
@@ -976,6 +1063,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
                     % Update the editor with the new collection
                     obj.MetadataCollection = collection;
+                    obj.HasUnsavedChanges = false;  % Reset unsaved changes flag
 
                     % Add to recent collections (moves to top) and update the UI
                     om.internal.RecentFileManager.addRecentFile('collections', filepath);
