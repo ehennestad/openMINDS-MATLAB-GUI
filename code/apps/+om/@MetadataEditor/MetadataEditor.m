@@ -1006,37 +1006,12 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             
             try
                 [collection, filepath] = om.command.openMetadataCollection();
-
                 if ~isempty(collection) && ~isempty(filepath)
-                    % Convert to UICollection if needed
-                    if isa(collection, 'openminds.Collection')
-                        collection = om.ui.UICollection.fromCollection(collection);
-                    end
-
-                    % Update the editor with the new collection
-                    obj.MetadataCollection = collection;
-                    obj.HasUnsavedChanges = false;  % Reset unsaved changes flag
-
-                    % Add to recent collections and update the UI
-                    om.internal.RecentFileManager.addRecentFile('collections', filepath);
-                    obj.updateRecentCollectionsMenu();
-
-                    % Refresh the graph and table views
-                    G = obj.MetadataCollection.graph;
-                    obj.UIGraphViewer.updateGraph(G);
-
-                    % Update current selection if possible
-                    if ~isempty(obj.CurrentSchemaTableName)
-                        % Can we do this more efficiently?
-                        [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
-                        obj.CurrentTableInstanceIds = ids;
-                        obj.updateUITable(T);
-                    end
-
-                    fprintf('Collection loaded successfully from: %s\n', filepath);
+                    obj.loadCollectionIntoEditor(collection, filepath);
                 end
             catch ME
                 obj.error(ME.message, 'Error Opening Collection')
+                rethrow(ME)
             end
         end
 
@@ -1065,37 +1040,52 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
                 % Load the collection using the command
                 [collection, ~] = om.command.openMetadataCollection(filepath);
-
                 if ~isempty(collection)
-                    % Convert to UICollection if needed
-                    if isa(collection, 'openminds.Collection')
-                        collection = om.ui.UICollection.fromCollection(collection);
-                    end
-
-                    % Update the editor with the new collection
-                    obj.MetadataCollection = collection;
-                    obj.HasUnsavedChanges = false;  % Reset unsaved changes flag
-
-                    % Add to recent collections (moves to top) and update the UI
-                    om.internal.RecentFileManager.addRecentFile('collections', filepath);
-                    obj.updateRecentCollectionsMenu();
-
-                    % Refresh the graph and table views
-                    G = obj.MetadataCollection.graph;
-                    obj.UIGraphViewer.updateGraph(G);
-
-                    % Update current selection if possible
-                    if ~isempty(obj.CurrentSchemaTableName)
-                        [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
-                        obj.CurrentTableInstanceIds = ids;
-                        obj.updateUITable(T);
-                    end
-
-                    fprintf('Collection loaded successfully from: %s\n', filepath);
+                    obj.loadCollectionIntoEditor(collection, filepath);
                 end
             catch ME
                 obj.error(ME.message, 'Error Opening Recent Collection')
+                disp( getReport(ME, 'extended') )
+
             end
+        end
+
+        function loadCollectionIntoEditor(obj, collection, filepath)
+            % Load a metadata collection into the editor
+            %
+            % This helper method contains the common logic for loading a
+            % collection, whether from file dialog or recent files.
+            
+            [~, dlgCleanup] = obj.uiprogressdlg(...
+                'Please wait, loading collection...', ...
+                'Title', 'Loading', ...
+                'Indeterminate', 'on'); %#ok<ASGLU>
+
+            % Convert to UICollection if needed
+            if strcmp(class(collection), 'openminds.Collection') %#ok<STISA> % Only want to convert if it is exactly superclass
+                collection = om.ui.UICollection.fromCollection(collection);
+            end
+
+            % Update the editor with the new collection
+            obj.MetadataCollection = collection;
+            obj.HasUnsavedChanges = false;  % Reset unsaved changes flag
+
+            % Add to recent collections and update the UI
+            om.internal.RecentFileManager.addRecentFile('collections', filepath);
+            obj.updateRecentCollectionsMenu();
+
+            % Refresh the graph and table views
+            G = obj.MetadataCollection.graph;
+            obj.UIGraphViewer.updateGraph(G);
+
+            % Update current selection if possible
+            if ~isempty(obj.CurrentSchemaTableName)
+                [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
+                obj.CurrentTableInstanceIds = ids;
+                obj.updateUITable(T);
+            end
+
+            fprintf('Collection loaded successfully from: %s\n', filepath);
         end
 
         function menuCallback_ClearRecentCollections(obj)
