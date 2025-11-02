@@ -51,5 +51,5 @@ function saveMetadataCollection(metadataCollection, filepath)
     MetadataCollection = metadataCollection;
     save(filepath, 'MetadataCollection');
     
-    fprintf('Metadata collection exported to %s\n', filepath);
+    fprintf('Metadata collection saved to %s\n', filepath);
 end
