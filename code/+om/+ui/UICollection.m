@@ -661,7 +661,7 @@ classdef UICollection < openminds.Collection
                     if ~isempty(options)
                         % Question/todo: Should we make a protected
                         % categorical with this extra option?
-                        rowValues = cell(numRows, 1);
+                        rowValues = strings(numRows, 1);
                         for jRow = 1:numRows
                             thisValue =  instanceTable{jRow,i};
                             if iscell(thisValue); thisValue = [thisValue{:}]; end
@@ -683,16 +683,16 @@ classdef UICollection < openminds.Collection
                                     thisValue = options(1);
                                 end
                             end
+                            rowValues(jRow) = thisValue;
                         end
 
                         % Build categorical after all potential options are
                         % collected
                         uniqueOptions = unique(options);
                         uniqueOptions(uniqueOptions == "") = [];
-                        for jRow = 1:numRows
-                            rowValues{jRow} = categorical(thisValue, uniqueOptions, 'Protected', true);
-                        end
-
+                        rowValues = categorical(rowValues, uniqueOptions, 'Protected', true);
+                        rowValues = num2cell(rowValues);
+                        
                         instanceTable.(thisColumnName) = cat(1, rowValues{:});
                     else
                         if isa(firstValue, 'openminds.abstract.Schema')
