@@ -88,7 +88,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.createPanels()
             obj.updateLayoutPositions()
             obj.createTabGroup()
-            
+
             dlg.Message = 'Creating sidebar...';
             obj.createCreateNewButton()
             typeSelections = obj.loadTypeQuickSelection();
@@ -341,10 +341,10 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             % Open/save/import/export
             obj.RecentCollectionsMenu = uimenu(m, 'Text', 'Open recent collection');
             obj.updateRecentCollectionsMenu();
-            
+
             mItem = uimenu(m, 'Text', 'Open collection...', 'Accelerator', 'o');
             mItem.Callback = @(s,e) obj.menuCallback_OpenCollection;
-            
+
             mItem = uimenu(m, 'Text', 'Save collection', 'Accelerator', 's', 'Separator', 'on');
             mItem.Callback = @(s,e) obj.menuCallback_SaveCollection;
 
@@ -400,7 +400,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.UIButtonCreateNew.Callback = @obj.onCreateNewButtonPressed;
             obj.UIButtonCreateNew.Units = 'normalized';
             obj.UIButtonCreateNew.Position = [0,0,1,1];
-            %obj.UIButtonCreateNew.FontWeight = 'bold';
+            % obj.UIButtonCreateNew.FontWeight = 'bold';
             obj.UIButtonCreateNew.FontSize = 14;
 
             % obj.UIButtonCreateNew.BackgroundColor = [0,231,102]/255;
@@ -528,7 +528,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 S = load(metadataFilepath, 'MetadataCollection');
                 obj.MetadataCollection = S.MetadataCollection;
                 % obj.MetadataCollection.createListenersForAllInstances()
-                
+
                 % Add to recent collections when loading at startup
                 om.internal.RecentFileManager.addRecentFile('collections', metadataFilepath);
             else
@@ -637,7 +637,6 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                     obj.SchemaMenu.Mode = "View";
                 case 'Create Multiple'
                     obj.SchemaMenu.Mode = "Multiple";
-
             end
         end
 
@@ -837,7 +836,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
                 for i = 1:numel(varNames)
                     if openminds.utility.isInstance( instance.(varNames{i}) )
-                    
+
                         if isa(instance.(varNames{i}), 'openminds.abstract.ControlledTerm')
                             S(i).IsEditable = true;
                         else
@@ -847,7 +846,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                                 S(i).IsEditable = false;
                             else
                                 propertyTypeName = instance.X_TYPE + "/" + varNames{i};
-    
+
                                 S(i).IsEditable = false;
                                 S(i).HasDoubleClickFunction = true;
                                 S(i).DoubleClickFunctionName = @(value, varargin) ...
@@ -884,7 +883,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             % Save collection to its current location
             filepath = obj.getMetadataCollectionFilepath();
             om.command.saveMetadataCollection(obj.MetadataCollection, filepath);
-            
+
             % Add to recent collections and update menu
             om.internal.RecentFileManager.addRecentFile('collections', filepath);
             obj.updateRecentCollectionsMenu();
@@ -911,29 +910,29 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 obj.error(ME.message, 'Error During Export')
             end
         end
-        
+
         function menuCallback_OpenCollection(obj)
             % Open a metadata collection from file
             try
                 [collection, filepath] = om.command.openMetadataCollection();
-                
+
                 if ~isempty(collection) && ~isempty(filepath)
                     % Convert to UICollection if needed
                     if isa(collection, 'openminds.Collection')
                         collection = om.ui.UICollection.fromCollection(collection);
                     end
-                    
+
                     % Update the editor with the new collection
                     obj.MetadataCollection = collection;
-                    
+
                     % Add to recent collections and update the UI
                     om.internal.RecentFileManager.addRecentFile('collections', filepath);
                     obj.updateRecentCollectionsMenu();
-                    
+
                     % Refresh the graph and table views
                     G = obj.MetadataCollection.graph;
                     obj.UIGraphViewer.updateGraph(G);
-                    
+
                     % Update current selection if possible
                     if ~isempty(obj.CurrentSchemaTableName)
                         % Can we do this more efficiently?
@@ -941,14 +940,14 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                         obj.CurrentTableInstanceIds = ids;
                         obj.updateUITable(T);
                     end
-                    
+
                     fprintf('Collection loaded successfully from: %s\n', filepath);
                 end
             catch ME
                 obj.error(ME.message, 'Error Opening Collection')
             end
         end
-        
+
         function menuCallback_OpenRecentCollection(obj, filepath)
             % Open a specific recent collection
             try
@@ -958,70 +957,70 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                         sprintf('The file no longer exists:\n%s\n\nRemove from recent list?', filepath), ...
                         'File Not Found', ...
                         'Remove', 'Cancel', 'Remove');
-                    
+
                     if strcmp(answer, 'Remove')
                         om.internal.RecentFileManager.removeRecentFile('collections', filepath);
                         obj.updateRecentCollectionsMenu();
                     end
                     return
                 end
-                
+
                 % Load the collection using the command
                 [collection, ~] = om.command.openMetadataCollection(filepath);
-                
+
                 if ~isempty(collection)
                     % Convert to UICollection if needed
                     if isa(collection, 'openminds.Collection')
                         collection = om.ui.UICollection.fromCollection(collection);
                     end
-                    
+
                     % Update the editor with the new collection
                     obj.MetadataCollection = collection;
-                    
+
                     % Add to recent collections (moves to top) and update the UI
                     om.internal.RecentFileManager.addRecentFile('collections', filepath);
                     obj.updateRecentCollectionsMenu();
-                    
+
                     % Refresh the graph and table views
                     G = obj.MetadataCollection.graph;
                     obj.UIGraphViewer.updateGraph(G);
-                    
+
                     % Update current selection if possible
                     if ~isempty(obj.CurrentSchemaTableName)
                         [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
                         obj.CurrentTableInstanceIds = ids;
                         obj.updateUITable(T);
                     end
-                    
+
                     fprintf('Collection loaded successfully from: %s\n', filepath);
                 end
             catch ME
                 obj.error(ME.message, 'Error Opening Recent Collection')
             end
         end
-        
+
         function menuCallback_ClearRecentCollections(obj)
             % Clear the recent collections list
             answer = questdlg(...
                 'Clear all recent collections from the list?', ...
                 'Clear Recent Collections', ...
                 'Clear', 'Cancel', 'Cancel');
-            
+
             if strcmp(answer, 'Clear')
                 om.internal.RecentFileManager.clearRecentFiles('collections');
                 obj.updateRecentCollectionsMenu();
             end
         end
-        
+
         function updateRecentCollectionsMenu(obj)
             % Update the recent collections submenu
-            
+
             % Delete existing submenu items
             delete(obj.RecentCollectionsMenu.Children);
-            
+
             % Get recent collections list
             recentList = om.internal.RecentFileManager.getRecentFiles('collections');
-            
+
             if isempty(recentList)
                 % Show "(empty)" item
                 mItem = uimenu(obj.RecentCollectionsMenu, 'Text', '(empty)');
@@ -1030,7 +1029,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 % Add each recent collection
                 for i = 1:numel(recentList)
                     filepath = recentList(i).filepath;
-                    
+
                     % Create display name
                     if isfield(recentList(i), 'name') && ~isempty(recentList(i).name)
                         displayName = recentList(i).name;
@@ -1038,32 +1037,32 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                         % Use abbreviated path
                         displayName = obj.getAbbreviatedPath(filepath);
                     end
-                    
+
                     % Add accelerator for first 9 items
                     if i <= 9
                         accelerator = sprintf('%d', i);
                     else
                         accelerator = '';
                     end
-                    
+
                     % Create menu item
                     mItem = uimenu(obj.RecentCollectionsMenu, ...
                         'Text', displayName, ...
                         'Accelerator', accelerator, ...
                         'MenuSelectedFcn', @(s,e) obj.menuCallback_OpenRecentCollection(filepath));
-                    
+
                     % Add tooltip with full path
                     if isprop(mItem, 'Tooltip')
                         mItem.Tooltip = filepath;
                     end
-                    
+
                     % Disable if file doesn't exist
                     if ~recentList(i).exists
                         mItem.Enable = 'off';
                         mItem.Text = [displayName, ' (missing)'];
                     end
                 end
-                
+
                 % Add separator and "Clear Recent" option
                 uimenu(obj.RecentCollectionsMenu, 'Separator', 'on', ...
                     'Text', 'Clear Recent Collections', ...
@@ -1071,13 +1070,13 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             end
         end
     end
-    
+
     methods (Access = private) % Helper methods for recent collections
         function abbrevPath = getAbbreviatedPath(obj, filepath) %#ok<INUSL>
             % Get abbreviated path for display (e.g., .../parent/filename.mat)
-            
+
             [pathParts] = strsplit(filepath, filesep);
-            
+
             if numel(pathParts) <= 3
                 % Short path, show all
                 abbrevPath = filepath;
@@ -1122,7 +1121,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         end
 
         function logoFilepath = getLogoFilepath()
-            
+
             logoFilepath = fullfile(...
                 om.internal.rootpath(), ...
                 'resources', ...
