@@ -95,6 +95,53 @@ classdef UICollection < openminds.Collection
     end
 
     methods
+        function remove(obj, instance)
+        % remove - Remove metadata instance from the collection
+        %
+        %   This method overrides the superclass remove method to also:
+        %   - Remove the node from the graph
+        %   - Notify listeners that the collection has changed
+        
+            import om.ui.uicollection.event.CollectionChangedEventData
+
+            % Get the instance ID
+            if isstring(instance) || ischar(instance)
+                instanceId = instance;
+            elseif openminds.utility.isInstance(instance)
+                instanceId = instance.id;
+            else
+                error('Unexpected type "%s" for instance argument', class(instance))
+            end
+
+            % Get the instance object before removing (for event notification)
+            if obj.NumNodes > 0 && isKey(obj.Nodes, instanceId)
+                removedInstance = obj.get(instanceId);
+            else
+                % Instance not found, let superclass handle the error
+                remove@openminds.Collection(obj, instance);
+                return
+            end
+
+            % Remove from superclass (handles Nodes and TypeMap)
+            remove@openminds.Collection(obj, instance);
+
+            % Remove the node from the graph
+            if ~isempty(obj.graph.Nodes)
+                foundNode = findnode(obj.graph, instanceId);
+                if foundNode > 0
+                    obj.graph = rmnode(obj.graph, instanceId);
+                end
+            end
+
+            % Notify that the collection has changed
+            if obj.EventStates('CollectionChanged')
+                evtData = CollectionChangedEventData('INSTANCE_REMOVED', removedInstance);
+                obj.notify('CollectionChanged', evtData)
+            end
+        end
+    end
+
+    methods
 
         function addDeprecated(obj, metadataInstance)
             % This method is kept for backward compatibility
@@ -136,7 +183,8 @@ classdef UICollection < openminds.Collection
 
         function removeDeprecated(obj, metadataName)
             % This method is kept for backward compatibility
-            % It now uses the remove method from the superclass
+            % It now uses the overridden remove method which handles
+            % graph removal and event notification
 
             % Get all instances of the specified type
             try
@@ -146,14 +194,6 @@ classdef UICollection < openminds.Collection
                 % Remove each instance from the collection
                 for i = 1:numel(instances)
                     obj.remove(instances(i));
-
-                    % Remove the node from the graph
-                    if ~isempty(obj.graph.Nodes)
-                        foundNode = findnode(obj.graph, instances(i).id);
-                        if foundNode > 0
-                            obj.graph = rmnode(obj.graph, instances(i).id);
-                        end
-                    end
                 end
             catch ME
                 warning('Failed to remove instances of type %s: %s', metadataName, ME.message);
@@ -161,7 +201,10 @@ classdef UICollection < openminds.Collection
         end
 
         function removeInstance(obj, type, index)
-            % Get all instances of the specified type
+            % Remove an instance of a specific type by index
+            % This method uses the overridden remove method which handles
+            % graph removal and event notification
+            
             try
                 instanceType = openminds.enum.Types(type);
                 instances = obj.list(instanceType);
@@ -174,14 +217,6 @@ classdef UICollection < openminds.Collection
                 % Remove the instance at the specified index
                 instanceToRemove = instances(index);
                 obj.remove(instanceToRemove);
-
-                % Remove the node from the graph
-                if ~isempty(obj.graph.Nodes)
-                    foundNode = findnode(obj.graph, instanceToRemove.id);
-                    if foundNode > 0
-                        obj.graph = rmnode(obj.graph, instanceToRemove.id);
-                    end
-                end
             catch ME
                 warning('Failed to remove instance of type %s at index %d: %s', type, index, ME.message);
             end
