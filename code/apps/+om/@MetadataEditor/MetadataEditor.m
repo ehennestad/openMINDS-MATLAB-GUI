@@ -621,6 +621,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 propValue = string(propValue);
             end
             obj.MetadataCollection.modifyInstance(instanceID, propName, propValue);
+            obj.HasUnsavedChanges = true;
         end
 
         function onTypeSelectionChanged(obj, ~, evt)
@@ -954,6 +955,14 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         function menuCallback_SaveCollection(obj)
             % Save collection to its current location
             filepath = obj.getMetadataCollectionFilepath();
+            if isempty(char(filepath))
+                obj.menuCallback_SaveCollectionAs()
+                return
+            end
+            [~, dlcgCleanup] = obj.uiprogressdlg( ...
+                sprintf('Saving changes to %s...', filepath), ...
+                'Title', 'Saving Collection', ...
+                'Indeterminate', 'on'); %#ok<ASGLU>
             om.command.saveMetadataCollection(obj.MetadataCollection, filepath);
             obj.HasUnsavedChanges = false;  % Clear unsaved changes flag
 
@@ -963,6 +972,8 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         end
 
         function menuCallback_SaveCollectionAs(obj)
+            [~, dlcgCleanup] = obj.uiprogressdlg('Saving changes...', ...
+                'Indeterminate', 'on'); %#ok<ASGLU>
             collection = obj.MetadataCollection;
             filePath = om.command.saveMetadataCollectionAs(collection);
 
