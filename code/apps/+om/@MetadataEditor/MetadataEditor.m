@@ -308,6 +308,13 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             varName = matlab.lang.makeValidName( schemaInstance.DisplayString );
             assignin('base', varName, schemaInstance)
         end
+
+        function exportCollectionToWorkspace(obj)
+            % Export the metadata collection to the workspace
+            varName = 'metadataCollection';
+            assignin('base', varName, obj.MetadataCollection);
+            fprintf('Metadata collection assigned to workspace variable: %s\n', varName);
+        end
     end
 
     methods (Access = private) % App initialization and update methods
@@ -391,11 +398,15 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             mItem = uimenu(m, 'Text', 'Save collection', 'Accelerator', 's', 'Separator', 'on');
             mItem.Callback = @(s,e) obj.menuCallback_SaveCollection;
 
-            mItem = uimenu(m, 'Text', 'Save collection as...', 'Accelerator', 'w');
+            mItem = uimenu(m, 'Text', 'Save collection as...');
             mItem.Callback = @(s,e) obj.menuCallback_SaveCollectionAs;
 
             mItem = uimenu(m, 'Text', 'Export collection...', 'Accelerator', 'e');
             mItem.Callback = @(s,e) obj.menuCallback_ExportCollection;
+
+            mItem = uimenu(m, 'Text', 'Assign collection in workspace', 'Accelerator', 'w');
+            mItem.Callback = @(s,e) obj.exportCollectionToWorkspace;
+
 
             mItem = uimenu(m, 'Text', 'Select project type', 'Separator', 'on');
             L = recursiveDir( fullfile(om.internal.rootpath, 'config', 'template_projects'), 'Type','folder');
@@ -497,6 +508,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             [menuInstance, graphicsMenu] = om.TableContextMenu(obj.Figure);
             obj.UIMetaTableViewer.TableContextMenu = graphicsMenu;
             menuInstance.DeleteItemFcn = @obj.onDeleteMetadataInstanceClicked;
+            menuInstance.ExportToWorkspaceFcn = @obj.onExportToWorkspaceClicked;
         end
 
         function plotOpenMindsLogo(obj)
@@ -780,6 +792,11 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.CurrentTableInstanceIds = ids;
             % app.MetaTable.removeEntries(selectedEntries)
             % app.UiMetaTableViewer.refreshTable(app.MetaTable)
+        end
+
+        function onExportToWorkspaceClicked(obj, ~, ~)
+            % Export selected instance(s) to workspace
+            obj.exportToWorkspace()
         end
 
         function onMouseDoubleClickedInTable(obj, ~, evt)
