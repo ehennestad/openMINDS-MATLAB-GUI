@@ -269,31 +269,6 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
             if isempty(obj.PrivateTableContextMenu) || ~isvalid(obj.PrivateTableContextMenu)
                 return;
             end
-            children = obj.PrivateTableContextMenu.Children;
-
-            isOutsideTable = isempty(clickedRow) && isempty(clickedCol);
-            isInColumnHeader = isempty(clickedRow) && ~isempty(clickedCol);
-
-            if isOutsideTable
-                % Do nothing - all items hidden by default or keep current state
-                [obj.PrivateTableContextMenu.Children.Visible] = deal('off');
-
-
-            % Conditionally show/hide context menu items based on whether user
-            % right clicks in the table or in the table column header
-            elseif isInColumnHeader
-                % Show header items, hide table items
-                hide = strcmp({children.Tag}, 'table');
-
-                [obj.PrivateTableContextMenu.Children(hide).Visible] = deal('off');
-                [obj.PrivateTableContextMenu.Children(~hide).Visible] = deal('on');
-            else
-                % Show table items, hide header items
-                hide = strcmp({children.Tag}, 'header');
-
-                [obj.PrivateTableContextMenu.Children(hide).Visible] = deal('off');
-                [obj.PrivateTableContextMenu.Children(~hide).Visible] = deal('on');
-            end
 
             % Update selection of rows on right clicks.
             if strcmp( hFigure.SelectionType, 'extend' )
@@ -309,6 +284,31 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
                 else
                     obj.UITable.Selection = evt.InteractionInformation.DisplayRow;
                 end
+            end
+
+            children = obj.PrivateTableContextMenu.Children;
+
+            isOutsideTable = isempty(clickedRow) && isempty(clickedCol);
+            isInColumnHeader = isempty(clickedRow) && ~isempty(clickedCol);
+
+            if isOutsideTable
+                % Do nothing - all items hidden by default or keep current state
+                [obj.PrivateTableContextMenu.Children.Visible] = deal('off');
+
+            % Conditionally show/hide context menu items based on whether user
+            % right clicks in the table or in the table column header
+            elseif isInColumnHeader
+                % Show header items, hide table items
+                hide = strcmp({children.Tag}, 'table');
+
+                [obj.PrivateTableContextMenu.Children(hide).Visible] = deal('off');
+                [obj.PrivateTableContextMenu.Children(~hide).Visible] = deal('on');
+            else
+                % Show table items, hide header items
+                hide = strcmp({children.Tag}, 'header');
+
+                [obj.PrivateTableContextMenu.Children(hide).Visible] = deal('off');
+                [obj.PrivateTableContextMenu.Children(~hide).Visible] = deal('on');
             end
         end
     end
