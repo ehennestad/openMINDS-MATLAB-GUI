@@ -475,8 +475,12 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 schemaTypes = {'DatasetVersion'};
             end
 
-            % Use factory function to create appropriate ListBox for current MATLAB version
-            sideBar = om.gui.control.ListBox(obj.UIPanel.SidebarL, schemaTypes);
+            % Create appropriate ListBox based on MATLAB version
+            if obj.requiresCompatibilityMode()
+                sideBar = om.gui.control.ListBoxLegacy(obj.UIPanel.SidebarL, schemaTypes);
+            else
+                sideBar = om.gui.control.ListBoxModern(obj.UIPanel.SidebarL, schemaTypes);
+            end
             sideBar.SelectionChangedFcn = @obj.onTypeSelectionChanged;
             obj.UISideBar = sideBar;
         end
