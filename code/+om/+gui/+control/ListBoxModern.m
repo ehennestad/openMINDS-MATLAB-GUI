@@ -28,6 +28,7 @@ classdef ListBoxModern < handle
     properties (SetAccess = private)
         Panel               % Parent panel
         UIListBox           % MATLAB uilistbox component
+        ContextMenu         % Context menu for right-click actions
     end
 
     properties (Dependent)
@@ -63,6 +64,9 @@ classdef ListBoxModern < handle
             
             % Set position to fill parent panel (will auto-resize)
             obj.UIListBox.Position = [1, 1, hPanel.Position(3)-2, hPanel.Position(4)-2];
+            
+            % Create context menu
+            obj.createContextMenu();
             
             % Select first item by default (without triggering callback yet)
             if ~isempty(obj.Name)
@@ -140,6 +144,155 @@ classdef ListBoxModern < handle
     end
 
     methods (Access = private)
+        function createContextMenu(obj)
+            % Create context menu for the listbox
+            fig = ancestor(obj.Panel, 'figure');
+            obj.ContextMenu = uicontextmenu(fig);
+            obj.UIListBox.ContextMenu = obj.ContextMenu;
+            
+            % Set the opening callback to handle selection on right-click
+            obj.ContextMenu.ContextMenuOpeningFcn = @obj.onContextMenuOpening;
+            
+            % Add "Remove Item" menu item
+            uimenu(obj.ContextMenu, ...
+                'Text', 'Remove Item', ...
+                'MenuSelectedFcn', @obj.onRemoveItem);
+            
+            % Add "Remove All Items" menu item
+            uimenu(obj.ContextMenu, ...
+                'Text', 'Remove All Items', ...
+                'MenuSelectedFcn', @obj.onRemoveAllItems, ...
+                'Separator', 'on');
+        end
+        
+        function onContextMenuOpening(obj, ~, evt)
+            % Handle selection when context menu is opened (right-click)
+            % Right-clicking an item selects it and updates the table.
+            % This matches standard UX behavior where right-click means
+            % "work with this item" and shows the context menu.
+            
+            % Get the figure to check selection type (normal vs shift-click)
+            hFigure = ancestor(obj.UIListBox, 'figure');
+            
+            % Determine which item was clicked
+            clickedItem = obj.getClickedItem(evt);
+            
+            if isempty(clickedItem)
+                return; % Click outside valid area
+            end
+            
+            % Update selection based on click type
+            % NOTE: Callbacks are NOT suppressed - table will update to show the selected item
+            if strcmp(hFigure.SelectionType, 'extend')
+                % Shift+Right-Click: Extend selection
+                obj.extendSelectionTo(clickedItem);
+            else
+                % Normal right-click: Select only if not already selected
+                currentSelection = obj.SelectedItems;
+                if ~ismember(clickedItem, currentSelection)
+                    obj.SelectedItems = clickedItem;
+                end
+            end
+        end
+        
+        function clickedItem = getClickedItem(obj, evt)
+            % Determine which item was right-clicked using InteractionInformation
+            
+            clickedItem = '';
+            
+            try
+                % Get the clicked item index from InteractionInformation
+                clickedIdx = evt.InteractionInformation.Item;
+                
+                if isempty(clickedIdx) || clickedIdx < 1 || clickedIdx > numel(obj.Name)
+                    return;
+                end
+                
+                % Return the item name at the clicked index
+                clickedItem = obj.Name{clickedIdx};
+            catch
+                % If we can't determine clicked item, fall back to current selection
+                currentSel = obj.SelectedItems;
+                if ~isempty(currentSel)
+                    clickedItem = currentSel{1};
+                end
+            end
+        end
+        
+        function extendSelectionTo(obj, targetItem)
+            % Extend selection from current selection to target item
+            % Similar to UIMetaTable's shift-click behavior
+            
+            currentSelection = obj.SelectedItems;
+            if isempty(currentSelection)
+                obj.SelectedItems = targetItem;
+                return;
+            end
+            
+            % Find indices of current selection and target
+            allItems = obj.Name;
+            currentIndices = cellfun(@(x) find(strcmp(allItems, x), 1), ...
+                currentSelection, 'UniformOutput', true);
+            targetIdx = find(strcmp(allItems, targetItem), 1);
+            
+            if isempty(targetIdx)
+                return;
+            end
+            
+            % Create selection range
+            minIdx = min([currentIndices, targetIdx]);
+            maxIdx = max([currentIndices, targetIdx]);
+            
+            obj.SelectedItems = allItems(minIdx:maxIdx);
+        end
+        
+        function onRemoveItem(obj, ~, ~)
+            % Remove currently selected item(s) from the listbox
+            if isempty(obj.SelectedItems)
+                return;
+            end
+            
+            % Get current items
+            currentItems = obj.UIListBox.ItemsData;
+            currentLabels = obj.UIListBox.Items;
+            
+            % Find items to keep (not selected)
+            itemsToRemove = obj.SelectedItems;
+            keepMask = true(size(currentItems));
+            for i = 1:numel(itemsToRemove)
+                keepMask = keepMask & ~strcmp(currentItems, itemsToRemove{i});
+            end
+            
+            % Update the listbox
+            if any(keepMask)
+                obj.UIListBox.ItemsData = currentItems(keepMask);
+                obj.UIListBox.Items = currentLabels(keepMask);
+                obj.Name = currentItems(keepMask);
+                if ~isempty(obj.Icon)
+                    obj.Icon = obj.Icon(keepMask);
+                end
+                
+                % Select the first remaining item
+                if ~isempty(obj.Name)
+                    obj.SelectedItems = obj.Name(1);
+                end
+            else
+                % No items left
+                obj.UIListBox.ItemsData = {};
+                obj.UIListBox.Items = {};
+                obj.Name = {};
+                obj.Icon = {};
+            end
+        end
+        
+        function onRemoveAllItems(obj, ~, ~)
+            % Remove all items from the listbox
+            obj.UIListBox.ItemsData = {};
+            obj.UIListBox.Items = {};
+            obj.Name = {};
+            obj.Icon = {};
+        end
+        
         function onListBoxValueChanged(obj, ~, evt)
             % Get old and new selection
             if isempty(evt.PreviousValue)
