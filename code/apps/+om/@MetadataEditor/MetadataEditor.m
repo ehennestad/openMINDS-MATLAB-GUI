@@ -94,7 +94,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             dlg.Message = 'Creating sidebar...';
             obj.createCreateNewButton()
             typeSelections = obj.loadTypeQuickSelection();
-            obj.createSchemaSelectorSidebar(typeSelections)
+            obj.createTypeSelectorSidebar(typeSelections)
             obj.plotOpenMindsLogo()
 
             dlg.Message = 'Creating graph viewer...';
@@ -197,7 +197,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 items = obj.UISideBar.Items;
                 delete(obj.UISideBar);
                 newItems = [items, {schemaName}];
-                obj.createSchemaSelectorSidebar(newItems)
+                obj.createTypeSelectorSidebar(newItems)
             end
 
             obj.UISideBar.SelectedItems = schemaName;
@@ -468,13 +468,14 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.UIPanel.CreateNew.BackgroundColor = obj.Figure.Color;
         end
 
-        function createSchemaSelectorSidebar(obj, schemaTypes)
+        function createTypeSelectorSidebar(obj, schemaTypes)
         %createSchemaSelectorSidebar Create a selector widget in side panel
 
             if nargin < 2 || (isstring(schemaTypes) && schemaTypes=="")
                 schemaTypes = {'DatasetVersion'};
             end
 
+            % Use factory function to create appropriate ListBox for current MATLAB version
             sideBar = om.gui.control.ListBox(obj.UIPanel.SidebarL, schemaTypes);
             sideBar.SelectionChangedFcn = @obj.onTypeSelectionChanged;
             obj.UISideBar = sideBar;
@@ -671,6 +672,10 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
         function onFigureSizeChanged(app)
             app.updateLayoutPositions()
+            % Update the sidebar listbox layout to match new panel size
+            if ~isempty(app.UISideBar) && isvalid(app.UISideBar)
+                app.UISideBar.updateLayout()
+            end
         end
 
         function onProjectTypeSelected(obj, src, ~)
