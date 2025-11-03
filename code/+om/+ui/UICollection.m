@@ -7,7 +7,6 @@ classdef UICollection < openminds.Collection
     %    - openMINDS type; i.e https://openminds.ebrains.eu/core/Subject
 
     % TODO:
-    %   - [ ] Remove instances
     %   - [ ] Modify instances
     %   - [ ] Get instance
     %   - [ ] Get all instances of type
@@ -57,6 +56,8 @@ classdef UICollection < openminds.Collection
 
             obj.initializeEventStates()
 
+            obj.configureNodesIfNeeded()
+
             % If Nodes are provided, assign them and build the graph
             if ~isempty(options.Nodes)
                 obj.Nodes = options.Nodes;
@@ -91,6 +92,53 @@ classdef UICollection < openminds.Collection
 
         function onNodesSet(obj)
             obj.buildGraphFromNodes();
+        end
+    end
+
+    methods
+        function remove(obj, instance)
+        % remove - Remove metadata instance from the collection
+        %
+        %   This method overrides the superclass remove method to also:
+        %   - Remove the node from the graph
+        %   - Notify listeners that the collection has changed
+
+            import om.ui.uicollection.event.CollectionChangedEventData
+
+            % Get the instance ID
+            if isstring(instance) || ischar(instance)
+                instanceId = instance;
+            elseif openminds.utility.isInstance(instance)
+                instanceId = instance.id;
+            else
+                error('Unexpected type "%s" for instance argument', class(instance))
+            end
+
+            % Get the instance object before removing (for event notification)
+            if isKey(obj.Nodes, instanceId)
+                removedInstance = obj.get(instanceId);
+            else
+                % Instance not found, let superclass handle the error
+                remove@openminds.Collection(obj, instance);
+                return
+            end
+
+            % Remove from superclass (handles Nodes and TypeMap)
+            remove@openminds.Collection(obj, instance);
+
+            % Remove the node from the graph
+            if ~isempty(obj.graph.Nodes)
+                foundNode = findnode(obj.graph, instanceId);
+                if foundNode > 0
+                    obj.graph = rmnode(obj.graph, instanceId);
+                end
+            end
+
+            % Notify that the collection has changed
+            if obj.EventStates('CollectionChanged')
+                evtData = CollectionChangedEventData('INSTANCE_REMOVED', removedInstance);
+                obj.notify('CollectionChanged', evtData)
+            end
         end
     end
 
@@ -136,7 +184,8 @@ classdef UICollection < openminds.Collection
 
         function removeDeprecated(obj, metadataName)
             % This method is kept for backward compatibility
-            % It now uses the remove method from the superclass
+            % It now uses the overridden remove method which handles
+            % graph removal and event notification
 
             % Get all instances of the specified type
             try
@@ -146,14 +195,6 @@ classdef UICollection < openminds.Collection
                 % Remove each instance from the collection
                 for i = 1:numel(instances)
                     obj.remove(instances(i));
-
-                    % Remove the node from the graph
-                    if ~isempty(obj.graph.Nodes)
-                        foundNode = findnode(obj.graph, instances(i).id);
-                        if foundNode > 0
-                            obj.graph = rmnode(obj.graph, instances(i).id);
-                        end
-                    end
                 end
             catch ME
                 warning('Failed to remove instances of type %s: %s', metadataName, ME.message);
@@ -161,7 +202,10 @@ classdef UICollection < openminds.Collection
         end
 
         function removeInstance(obj, type, index)
-            % Get all instances of the specified type
+            % Remove an instance of a specific type by index
+            % This method uses the overridden remove method which handles
+            % graph removal and event notification
+
             try
                 instanceType = openminds.enum.Types(type);
                 instances = obj.list(instanceType);
@@ -174,14 +218,6 @@ classdef UICollection < openminds.Collection
                 % Remove the instance at the specified index
                 instanceToRemove = instances(index);
                 obj.remove(instanceToRemove);
-
-                % Remove the node from the graph
-                if ~isempty(obj.graph.Nodes)
-                    foundNode = findnode(obj.graph, instanceToRemove.id);
-                    if foundNode > 0
-                        obj.graph = rmnode(obj.graph, instanceToRemove.id);
-                    end
-                end
             catch ME
                 warning('Failed to remove instance of type %s at index %d: %s', type, index, ME.message);
             end
@@ -403,6 +439,16 @@ classdef UICollection < openminds.Collection
     end
 
     methods (Access = private)
+        function configureNodesIfNeeded(obj)
+            if isa(obj.Nodes, 'dictionary') && ~isConfigured(obj.Nodes)
+                if exist('configureDictionary', 'builtin') == 5
+                    obj.Nodes = configureDictionary('string', 'cell');
+                else
+                    obj.Nodes("dummy") = {''};
+                    obj.Nodes = remove(obj.Nodes, "dummy");
+                end
+            end
+        end
 
         function addInstanceProperties(obj, thisInstance)
             % Search through public properties of the metadata instance
@@ -692,7 +738,7 @@ classdef UICollection < openminds.Collection
                         uniqueOptions(uniqueOptions == "") = [];
                         rowValues = categorical(rowValues, uniqueOptions, 'Protected', true);
                         rowValues = num2cell(rowValues);
-                        
+
                         instanceTable.(thisColumnName) = cat(1, rowValues{:});
                     else
                         if isa(firstValue, 'openminds.abstract.Schema')
