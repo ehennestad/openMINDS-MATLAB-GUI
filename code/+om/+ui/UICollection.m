@@ -7,7 +7,6 @@ classdef UICollection < openminds.Collection
     %    - openMINDS type; i.e https://openminds.ebrains.eu/core/Subject
 
     % TODO:
-    %   - [ ] Remove instances
     %   - [ ] Modify instances
     %   - [ ] Get instance
     %   - [ ] Get all instances of type
@@ -57,6 +56,8 @@ classdef UICollection < openminds.Collection
 
             obj.initializeEventStates()
 
+            obj.configureNodesIfNeeded()
+
             % If Nodes are provided, assign them and build the graph
             if ~isempty(options.Nodes)
                 obj.Nodes = options.Nodes;
@@ -101,7 +102,7 @@ classdef UICollection < openminds.Collection
         %   This method overrides the superclass remove method to also:
         %   - Remove the node from the graph
         %   - Notify listeners that the collection has changed
-        
+
             import om.ui.uicollection.event.CollectionChangedEventData
 
             % Get the instance ID
@@ -114,7 +115,7 @@ classdef UICollection < openminds.Collection
             end
 
             % Get the instance object before removing (for event notification)
-            if obj.NumNodes > 0 && isKey(obj.Nodes, instanceId)
+            if isKey(obj.Nodes, instanceId)
                 removedInstance = obj.get(instanceId);
             else
                 % Instance not found, let superclass handle the error
@@ -204,7 +205,7 @@ classdef UICollection < openminds.Collection
             % Remove an instance of a specific type by index
             % This method uses the overridden remove method which handles
             % graph removal and event notification
-            
+
             try
                 instanceType = openminds.enum.Types(type);
                 instances = obj.list(instanceType);
@@ -438,6 +439,16 @@ classdef UICollection < openminds.Collection
     end
 
     methods (Access = private)
+        function configureNodesIfNeeded(obj)
+            if isa(obj.Nodes, 'dictionary') && ~isConfigured(obj.Nodes)
+                if exist('configureDictionary', 'builtin') == 5
+                    obj.Nodes = configureDictionary('string', 'cell');
+                else
+                    obj.Nodes("dummy") = {''};
+                    obj.Nodes = remove(obj.Nodes, "dummy");
+                end
+            end
+        end
 
         function addInstanceProperties(obj, thisInstance)
             % Search through public properties of the metadata instance
@@ -727,7 +738,7 @@ classdef UICollection < openminds.Collection
                         uniqueOptions(uniqueOptions == "") = [];
                         rowValues = categorical(rowValues, uniqueOptions, 'Protected', true);
                         rowValues = num2cell(rowValues);
-                        
+
                         instanceTable.(thisColumnName) = cat(1, rowValues{:});
                     else
                         if isa(firstValue, 'openminds.abstract.Schema')
