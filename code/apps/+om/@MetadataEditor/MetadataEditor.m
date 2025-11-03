@@ -530,12 +530,13 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             % Create column header context menu % Todo: support in
             % compatibility mode
-            if ~obj.requiresCompatibilityMode()
-                columnHeaderMenu = uicontextmenu(obj.Figure);
-                uimenu(columnHeaderMenu, 'Text', 'Hide Column', ...
-                    'MenuSelectedFcn', @(s,e) obj.hideColumn());
-                obj.UIMetaTableViewer.ColumnHeaderContextMenu = columnHeaderMenu;
-            end
+            % % if ~obj.requiresCompatibilityMode() %Todo: Add support for
+            % this, requires proper handler for saving and restoring for table column preferences
+            % %     columnHeaderMenu = uicontextmenu(obj.Figure);
+            % %     uimenu(columnHeaderMenu, 'Text', 'Hide Column', ...
+            % %         'MenuSelectedFcn', @(s,e) obj.hideColumn());
+            % %     obj.UIMetaTableViewer.ColumnHeaderContextMenu = columnHeaderMenu;
+            % % end
         end
 
         function initializeNoInstancesText(obj)
