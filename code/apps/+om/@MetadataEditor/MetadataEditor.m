@@ -127,6 +127,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             % Add these callbacks after every component is made
             if obj.requiresCompatibilityMode()
                 obj.Figure.SizeChangedFcn = @(s, e) obj.onFigureSizeChanged;
+            else
+                obj.Figure.AutoResizeChildren = 'off';
+                obj.Figure.SizeChangedFcn = @(s, e) obj.onFigureSizeChanged;
             end
             obj.Figure.CloseRequestFcn = @obj.onExit;
 
@@ -264,6 +267,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             %tf = true; return
             tf = exist('isMATLABReleaseOlderThan', 'file') ~= 2 ...
                     || isMATLABReleaseOlderThan("R2023a");
+            if tf
+                error('Compatibility mode is not supported at the moment')
+            end
         end
 
         function shouldContinue = checkUnsavedChanges(obj)
@@ -511,11 +517,14 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             menuInstance.ExportToWorkspaceFcn = @obj.onExportToWorkspaceClicked;
             obj.UIMetaTableViewer.TableContextMenu = graphicsMenu;
 
-            % Create column header context menu
-            columnHeaderMenu = uicontextmenu(obj.Figure);
-            uimenu(columnHeaderMenu, 'Text', 'Hide Column', ...
-                'MenuSelectedFcn', @(s,e) obj.hideColumn());
-            obj.UIMetaTableViewer.ColumnHeaderContextMenu = columnHeaderMenu;
+            % Create column header context menu % Todo: support in
+            % compatibility mode
+            if ~obj.requiresCompatibilityMode()
+                columnHeaderMenu = uicontextmenu(obj.Figure);
+                uimenu(columnHeaderMenu, 'Text', 'Hide Column', ...
+                    'MenuSelectedFcn', @(s,e) obj.hideColumn());
+                obj.UIMetaTableViewer.ColumnHeaderContextMenu = columnHeaderMenu;
+            end
         end
 
         function plotOpenMindsLogo(obj)
