@@ -33,6 +33,10 @@ classdef (Abstract) MetaTableViewer < handle & matlab.mixin.SetGet
         MetaTableType char = ''             % Type identifier (e.g., 'session')
     end
     
+    properties (Abstract, Dependent)
+        Visible                              % Visibility of the table component ('on' or 'off')
+    end
+    
     properties (Abstract, SetAccess = protected)
         Parent                              % Parent container (figure, panel, etc.)
     end

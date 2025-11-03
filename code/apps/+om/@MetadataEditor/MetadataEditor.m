@@ -43,6 +43,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         UISideBar
         UIGraphViewer
         UIButtonCreateNew
+        UINoInstancesText  % Text component for "no instances available" message
     end
 
     properties (Access = private)
@@ -119,6 +120,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             dlg.Message = 'Creating table viewer...';
             obj.initializeTableViewer()
             obj.initializeTableContextMenu()
+            obj.initializeNoInstancesText()
 
             dlg.Message = 'Creating menus...';
             obj.createMainMenu()
@@ -157,6 +159,10 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             if isdeletable(obj.UIMetaTableViewer)
                 delete(obj.UIMetaTableViewer)
+            end
+
+            if isdeletable(obj.UINoInstancesText)
+                delete(obj.UINoInstancesText)
             end
 
             delete(obj.MetadataCollection)
@@ -495,7 +501,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             nansen.internal.user.NansenUserSession.instance();
 
             if obj.requiresCompatibilityMode()
-                h = nansen.MetaTableViewer( obj.UIContainer.UITab(1), [], nvPairs{:});
+                h = nansen.MetaTableViewer(obj.UIContainer.UITab(1), [], nvPairs{:});
                 h.HTable.KeyPressFcn = @obj.onKeyPressed;
             else
                 % Use new uitable-based implementation with same constructor signature
@@ -529,6 +535,40 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 uimenu(columnHeaderMenu, 'Text', 'Hide Column', ...
                     'MenuSelectedFcn', @(s,e) obj.hideColumn());
                 obj.UIMetaTableViewer.ColumnHeaderContextMenu = columnHeaderMenu;
+            end
+        end
+
+        function initializeNoInstancesText(obj)
+            % Create a text component to display "no instances available" message
+            if obj.requiresCompatibilityMode()
+                % For older MATLAB versions, use uicontrol with text style
+                obj.UINoInstancesText = uicontrol(obj.UIContainer.UITab(1), ...
+                    'Style', 'text', ...
+                    'String', 'No instances available', ...
+                    'FontSize', 14, ...
+                    'ForegroundColor', [0.5, 0.5, 0.5], ...
+                    'BackgroundColor', 'w', ...
+                    'HorizontalAlignment', 'center', ...
+                    'Units', 'normalized', ...
+                    'Position', [0.3, 0.45, 0.4, 0.1], ...
+                    'Visible', 'off');
+            else
+                % For newer MATLAB versions, use uilabel
+                % uilabel uses pixel positioning by default
+                parentPos = getpixelposition(obj.UIContainer.UITab(1));
+                labelWidth = 400;
+                labelHeight = 50;
+                labelX = (parentPos(3) - labelWidth) / 2;
+                labelY = (parentPos(4) - labelHeight) / 2;
+                
+                obj.UINoInstancesText = uilabel(obj.UIContainer.UITab(1), ...
+                    'Text', 'No instances available', ...
+                    'FontSize', 18, ...
+                    'FontColor', [0.4, 0.4, 0.4], ...
+                    'BackgroundColor', [0.94,0.94,0.94], ...
+                    'HorizontalAlignment', 'center', ...
+                    'Position', [labelX, labelY, labelWidth, labelHeight], ...
+                    'Visible', 'off');
             end
         end
 
@@ -896,12 +936,37 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
         function updateUITable(obj, metaTable)
 
-            if ~isempty(metaTable)
-                % obj.UIMetaTableViewer.resetTable()
+            if ~isempty(metaTable) && height(metaTable) > 0
+                % Has instances - show table, hide message
                 obj.UIMetaTableViewer.refreshTable(metaTable, true)
+                obj.setTableVisibility(true)
+                obj.UINoInstancesText.Visible = 'off';
             else
+                % No instances - hide table, show message
                 obj.UIMetaTableViewer.resetTable()
                 obj.UIMetaTableViewer.refreshTable(table.empty, true)
+                obj.setTableVisibility(false)
+                obj.UINoInstancesText.Visible = 'on';
+            end
+        end
+
+        function setTableVisibility(obj, isVisible)
+            % Set visibility of the underlying table component
+            if isVisible
+                visibleState = 'on';
+            else
+                visibleState = 'off';
+            end
+
+            if obj.requiresCompatibilityMode()
+                % For nansen.MetaTableViewer, access HTable directly
+                % TODO: This should be refactored when nansen code is cleaned up
+                if ~isempty(obj.UIMetaTableViewer.HTable) && isvalid(obj.UIMetaTableViewer.HTable)
+                    obj.UIMetaTableViewer.HTable.Visible = visibleState;
+                end
+            else
+                % For UIMetaTable, use the Visible property
+                obj.UIMetaTableViewer.Visible = visibleState;
             end
         end
 

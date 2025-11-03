@@ -10,6 +10,10 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
         Parent          % Parent container
     end
     
+    properties (Dependent)
+        Visible         % Visibility of the table component ('on' or 'off')
+    end
+    
     properties (Access = private)
         UITable         % The underlying uitable component
         LastClickTime = 0  % Time of last mouse click (for detecting double-clicks)
@@ -140,6 +144,25 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
             end
             if ~isempty(obj.PrivateTableContextMenu) && isvalid(obj.PrivateTableContextMenu)
                 delete(obj.PrivateTableContextMenu);
+            end
+        end
+    end
+    
+    % Property accessors
+    methods
+        function value = get.Visible(obj)
+            %get.Visible Get visibility state of the table
+            if ~isempty(obj.UITable) && isvalid(obj.UITable)
+                value = obj.UITable.Visible;
+            else
+                value = 'on';  % Default value
+            end
+        end
+        
+        function set.Visible(obj, value)
+            %set.Visible Set visibility state of the table
+            if ~isempty(obj.UITable) && isvalid(obj.UITable)
+                obj.UITable.Visible = value;
             end
         end
     end
