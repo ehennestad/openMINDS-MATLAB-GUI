@@ -1,4 +1,4 @@
-classdef ListBox < handle
+classdef ListBoxLegacy < handle
 %ListBox Listbox widget
 
     % Todo:
