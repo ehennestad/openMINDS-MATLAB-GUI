@@ -51,12 +51,11 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
 
     methods (Access = private)
         function createMenuItems(obj)
-
-            obj.UIMenuItemDeleteItem = uimenu(obj.UIContextMenu, ...
-                "Text", "Delete instance");
-            
             obj.UIMenuItemExportToWorkspace = uimenu(obj.UIContextMenu, ...
                 "Text", "Export to workspace");
+
+            obj.UIMenuItemDeleteItem = uimenu(obj.UIContextMenu, ...
+                "Text", "Delete instance", "Separator", "on");
         end
 
         function assignMenuItemCallbacks(obj)

@@ -276,6 +276,8 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
 
             if isOutsideTable
                 % Do nothing - all items hidden by default or keep current state
+                [obj.PrivateTableContextMenu.Children.Visible] = deal('off');
+
 
             % Conditionally show/hide context menu items based on whether user
             % right clicks in the table or in the table column header
