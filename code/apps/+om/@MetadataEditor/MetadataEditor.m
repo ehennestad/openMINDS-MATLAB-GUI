@@ -668,6 +668,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             end
             obj.UIMetaTableViewer.MetaTableType = string(schemaType);
             obj.updateUITable(metaTable)
+            drawnow
         end
 
         function onFigureSizeChanged(app)
