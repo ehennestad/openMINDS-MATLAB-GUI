@@ -505,10 +505,17 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         end
 
         function initializeTableContextMenu(obj)
+            % Create table context menu (for table body)
             [menuInstance, graphicsMenu] = om.TableContextMenu(obj.Figure);
-            obj.UIMetaTableViewer.TableContextMenu = graphicsMenu;
             menuInstance.DeleteItemFcn = @obj.onDeleteMetadataInstanceClicked;
             menuInstance.ExportToWorkspaceFcn = @obj.onExportToWorkspaceClicked;
+            obj.UIMetaTableViewer.TableContextMenu = graphicsMenu;
+
+            % Create column header context menu
+            columnHeaderMenu = uicontextmenu(obj.Figure);
+            uimenu(columnHeaderMenu, 'Text', 'Hide Column', ...
+                'MenuSelectedFcn', @(s,e) obj.hideColumn());
+            obj.UIMetaTableViewer.ColumnHeaderContextMenu = columnHeaderMenu;
         end
 
         function plotOpenMindsLogo(obj)

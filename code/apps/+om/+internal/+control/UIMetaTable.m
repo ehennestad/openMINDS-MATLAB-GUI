@@ -12,16 +12,12 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
     
     properties (Access = private)
         UITable         % The underlying uitable component
-        UIContextMenu   % Context menu for table
         LastClickTime = 0  % Time of last mouse click (for detecting double-clicks)
-        ColumnHeaderContextMenu
     end
-    
-    % Delegate to underlying table
-    %  - Keypress function
-    %  - CellEditCallback
-    %  - MouseDoubleClickedFcn
-    %  - TableContextMenu
+
+    properties (Access = private)
+        PrivateTableContextMenu
+    end
     
     methods
         function obj = UIMetaTable(varargin)
@@ -142,8 +138,8 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
             if ~isempty(obj.UITable) && isvalid(obj.UITable)
                 delete(obj.UITable);
             end
-            if ~isempty(obj.UIContextMenu) && isvalid(obj.UIContextMenu)
-                delete(obj.UIContextMenu);
+            if ~isempty(obj.PrivateTableContextMenu) && isvalid(obj.PrivateTableContextMenu)
+                delete(obj.PrivateTableContextMenu);
             end
         end
     end
@@ -174,9 +170,6 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
             
             obj.UITable.ClickedFcn = @obj.onMouseClicked;
             obj.UITable.DoubleClickedFcn = @obj.onMouseDoubleClicked;
-
-            % Create context menu
-            obj.createContextMenu();
         end
         
         function updateTableDisplay(obj)
@@ -215,27 +208,7 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
         end
     end
 
-    methods (Access = private)
-        function createContextMenu(obj)
-            %createContextMenu Create context menu for table
-            
-            obj.UIContextMenu = uicontextmenu(ancestor(obj.Parent, 'figure'));
-            obj.UITable.ContextMenu = obj.UIContextMenu;
-            obj.UITable.ContextMenu.ContextMenuOpeningFcn = @obj.onContextMenuOpened;
-            
-            % Add menu items
-            uimenu(obj.UIContextMenu, 'Text', 'Duplicate Entries', ...
-                'MenuSelectedFcn', @obj.duplicateEntries, 'Tag', 'table');
-            uimenu(obj.UIContextMenu, 'Text', 'Delete', ...
-                'Separator', 'on', ...
-                'MenuSelectedFcn', @obj.deleteEntries, 'Tag', 'table');
-
-            obj.ColumnHeaderContextMenu = uicontextmenu(ancestor(obj.Parent, 'figure'));
-            
-            uimenu(obj.UIContextMenu, 'Text', 'Hide Column', ...
-                'MenuSelectedFcn', @(s,e) obj.hideColumn(), 'Tag', 'header');
-        end
-        
+    methods (Access = private)        
         function onCellEdit(obj, ~, event)
             %onCellEdit Callback for cell edits
             
@@ -292,25 +265,32 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
             clickedRow = evt.InteractionInformation.DisplayRow;
             clickedCol = evt.InteractionInformation.DisplayColumn;
 
-            children = obj.UIContextMenu.Children;
+            % Get children from the unified private context menu
+            if isempty(obj.PrivateTableContextMenu) || ~isvalid(obj.PrivateTableContextMenu)
+                return;
+            end
+            children = obj.PrivateTableContextMenu.Children;
 
             isOutsideTable = isempty(clickedRow) && isempty(clickedCol);
             isInColumnHeader = isempty(clickedRow) && ~isempty(clickedCol);
 
             if isOutsideTable
+                % Do nothing - all items hidden by default or keep current state
 
-            % Conditionally hide context menu items based on whether user
+            % Conditionally show/hide context menu items based on whether user
             % right clicks in the table or in the table column header
             elseif isInColumnHeader
+                % Show header items, hide table items
                 hide = strcmp({children.Tag}, 'table');
 
-                [obj.UIContextMenu.Children(hide).Visible]=deal('off');
-                [obj.UIContextMenu.Children(~hide).Visible]=deal('on');
+                [obj.PrivateTableContextMenu.Children(hide).Visible] = deal('off');
+                [obj.PrivateTableContextMenu.Children(~hide).Visible] = deal('on');
             else
+                % Show table items, hide header items
                 hide = strcmp({children.Tag}, 'header');
 
-                [obj.UIContextMenu.Children(hide).Visible]=deal('off');
-                [obj.UIContextMenu.Children(~hide).Visible]=deal('on');
+                [obj.PrivateTableContextMenu.Children(hide).Visible] = deal('off');
+                [obj.PrivateTableContextMenu.Children(~hide).Visible] = deal('on');
             end
 
             % Update selection of rows on right clicks.
@@ -329,12 +309,89 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
                 end
             end
         end
+    end
 
-        function duplicateEntries(obj, src, evt) %#ok<INUSD>
-            fprintf('not implemented\n')
+    methods (Access = protected) % Property post set methods
+        function postSetTableContextMenu(obj)
+            % Rebuild the unified context menu when TableContextMenu changes
+            obj.rebuildUnifiedContextMenu();
         end
-        function deleteEntries(obj, src, evt) %#ok<INUSD>
-            fprintf('not implemented\n')
+        
+        function postSetColumnHeaderContextMenu(obj)
+            % Rebuild the unified context menu when ColumnHeaderContextMenu changes
+            obj.rebuildUnifiedContextMenu();
+        end
+    end
+    
+    methods (Access = private) % Context menu management
+        function rebuildUnifiedContextMenu(obj)
+            %rebuildUnifiedContextMenu Create a unified context menu combining table and header menus
+            %   Creates a private context menu that includes items from both
+            %   TableContextMenu and ColumnHeaderContextMenu, tagging them
+            %   appropriately so they can be shown/hidden based on click location.
+            
+            % Delete existing private context menu if it exists
+            if ~isempty(obj.PrivateTableContextMenu) && isvalid(obj.PrivateTableContextMenu)
+                delete(obj.PrivateTableContextMenu);
+            end
+            
+            % Create new unified context menu
+            parentFig = ancestor(obj.Parent, 'figure');
+            if isempty(parentFig)
+                return;
+            end
+            
+            obj.PrivateTableContextMenu = uicontextmenu(parentFig);
+            
+            % Copy items from TableContextMenu and tag them as 'table'
+            if ~isempty(obj.TableContextMenu) && isvalid(obj.TableContextMenu)
+                tableItems = obj.TableContextMenu.Children;
+                for i = numel(tableItems):-1:1  % Reverse order to maintain menu order
+                    obj.copyMenuItem(tableItems(i), 'table');
+                end
+            end
+            
+            % Copy items from ColumnHeaderContextMenu and tag them as 'header'
+            if ~isempty(obj.ColumnHeaderContextMenu) && isvalid(obj.ColumnHeaderContextMenu)
+                headerItems = obj.ColumnHeaderContextMenu.Children;
+                for i = numel(headerItems):-1:1  % Reverse order to maintain menu order
+                    obj.copyMenuItem(headerItems(i), 'header');
+                end
+            end
+            
+            % Assign the unified context menu to the UITable
+            obj.UITable.ContextMenu = obj.PrivateTableContextMenu;
+            obj.UITable.ContextMenu.ContextMenuOpeningFcn = @obj.onContextMenuOpened;
+        end
+        
+        function copyMenuItem(obj, sourceItem, tag)
+            %copyMenuItem Copy a menu item from source to target menu with a tag
+            
+            % Create new menu item in target
+            newItem = uimenu(obj.PrivateTableContextMenu);
+            
+            % Copy properties
+            newItem.Text = sourceItem.Text;
+            newItem.Tag = tag;
+            
+            % Copy callback if it exists
+            if ~isempty(sourceItem.MenuSelectedFcn)
+                newItem.MenuSelectedFcn = sourceItem.MenuSelectedFcn;
+            end
+            
+            % Copy other common properties
+            if isprop(sourceItem, 'Separator')
+                newItem.Separator = sourceItem.Separator;
+            end
+            if isprop(sourceItem, 'Enable')
+                newItem.Enable = sourceItem.Enable;
+            end
+            if isprop(sourceItem, 'Checked')
+                newItem.Checked = sourceItem.Checked;
+            end
+            if isprop(sourceItem, 'Accelerator')
+                newItem.Accelerator = sourceItem.Accelerator;
+            end
         end
     end
 end

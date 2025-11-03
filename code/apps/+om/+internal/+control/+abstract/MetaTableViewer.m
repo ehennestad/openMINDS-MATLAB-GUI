@@ -20,6 +20,9 @@ classdef (Abstract) MetaTableViewer < handle & matlab.mixin.SetGet
 % - Handle cell edit
 % - id column is not editable
 
+% Some context menu items could be table generic, like delete row, hide
+% column etc.
+
     % Public properties
     properties (SetAccess = public) % Todo: protected
         MetaTable                           % Table or nansen.metadata.MetaTable
@@ -43,6 +46,7 @@ classdef (Abstract) MetaTableViewer < handle & matlab.mixin.SetGet
         MouseDoubleClickedFcn = []           % Alias for MouseClickedCallback (for NANSEN compatibility)
         KeyPressCallback = []                % Callback for key presses
         TableContextMenu
+        ColumnHeaderContextMenu % Not implemented yet
     end
     
     % UI State
@@ -140,9 +144,14 @@ classdef (Abstract) MetaTableViewer < handle & matlab.mixin.SetGet
             obj.updateTableDisplay();
         end
         
-        function delete(~)
+        function delete(obj)
             %delete Cleanup when object is destroyed
-            % Subclasses should override to clean up UI components
+            if ~isempty(obj.TableContextMenu) && isvalid(obj.TableContextMenu)
+                delete(obj.TableContextMenu);
+            end
+            if ~isempty(obj.ColumnHeaderContextMenu) && isvalid(obj.ColumnHeaderContextMenu)
+                delete(obj.ColumnHeaderContextMenu);
+            end
         end
     end
     
@@ -162,6 +171,16 @@ classdef (Abstract) MetaTableViewer < handle & matlab.mixin.SetGet
             
             % Update variable attributes
             %obj.updateMetaTableVariableAttributes();
+        end
+    
+        function set.TableContextMenu(obj, value)
+            obj.TableContextMenu = value;
+            obj.postSetTableContextMenu()
+        end
+
+        function set.ColumnHeaderContextMenu(obj, value)
+            obj.ColumnHeaderContextMenu = value;
+            obj.postSetColumnHeaderContextMenu()
         end
     end
     
@@ -357,5 +376,10 @@ classdef (Abstract) MetaTableViewer < handle & matlab.mixin.SetGet
                 obj.CellSelectionCallback(obj, evtData);
             end
         end
+    end
+
+    methods (Abstract, Access = protected) % Property post set methods
+        postSetTableContextMenu(obj)
+        postSetColumnHeaderContextMenu(obj)
     end
 end
