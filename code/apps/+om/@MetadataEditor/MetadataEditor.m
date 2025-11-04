@@ -25,7 +25,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
     end
 
     properties (Constant)
-        Pages = {'Table Viewer', 'Graph Viewer', 'Timeline Viewer'} %, 'Figures'}
+        Pages = {'Table Viewer', 'Graph Viewer'} %, 'Timeline Viewer'}
     end
 
     properties (SetAccess = private)
@@ -327,6 +327,12 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             assignin('base', varName, obj.MetadataCollection);
             fprintf('Metadata collection assigned to workspace variable: %s\n', varName);
         end
+
+        function refreshTable(obj)
+            schemaType = obj.CurrentSchemaTableName;
+            [metaTable, ~] = obj.MetadataCollection.getTable(schemaType);
+            obj.updateUITable(metaTable)
+        end
     end
 
     methods (Access = private) % App initialization and update methods
@@ -418,7 +424,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             mItem = uimenu(m, 'Text', 'Assign collection in workspace', 'Accelerator', 'w');
             mItem.Callback = @(s,e) obj.exportCollectionToWorkspace;
-
+           
+            mItem = uimenu(m, 'Text', 'Refresh table', 'Accelerator', 'r');
+            mItem.Callback = @(s,e) obj.refreshTable;
 
             mItem = uimenu(m, 'Text', 'Select project type', 'Separator', 'on');
             L = recursiveDir( fullfile(om.internal.rootpath, 'config', 'template_projects'), 'Type','folder');
@@ -435,8 +443,8 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             end
 
             mItem = uimenu(m, 'Text', 'MenuSelectionMode', 'Separator', 'on');
-            modeOptions = ["Default", "Create Multiple"];
-            accelerators = ["d", "m"];
+            modeOptions = ["View Instances", "Create Single Instance", "Create Multiple Instances"];
+            accelerators = ["v", "i", "m"];
             for i = 1:numel(modeOptions)
                 mSubItem = uimenu(mItem, "Text", modeOptions(i), "Accelerator", accelerators(i));
                 mSubItem.Callback = @obj.onMenuModeChanged;
@@ -760,9 +768,11 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             src.Checked = 'on';
 
             switch src.Text
-                case 'Default'
+                case "View Instances"
                     obj.SchemaMenu.Mode = "View";
-                case 'Create Multiple'
+                case "Create Single Instance"
+                    obj.SchemaMenu.Mode = "Single";
+                case "Create Multiple Instances"
                     obj.SchemaMenu.Mode = "Multiple";
             end
         end

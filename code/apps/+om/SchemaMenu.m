@@ -19,7 +19,7 @@ classdef SchemaMenu < MultiModalMenu
     end
 
     properties (Constant, Hidden)
-        KEY_TO_MODE_MAP = containers.Map( {'', 'n', 'h', 'o', 'v'}, {'View', 'Multiple', 'Help', 'Open', 'Single'})
+        KEY_TO_MODE_MAP = containers.Map( {'', 'n', 'h', 'o', '1'}, {'View', 'Multiple', 'Help', 'Open', 'Single'})
     end
 
     methods
