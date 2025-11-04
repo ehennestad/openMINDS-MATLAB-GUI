@@ -6,7 +6,7 @@ classdef ListBoxModern < handle
 
     properties
         % Whether single or multiple items in the list can be selected
-        SelectionMode char {mustBeMember(SelectionMode, {'single', 'multiple'})} = 'multiple'
+        SelectionMode char {mustBeMember(SelectionMode, {'single', 'multiple'})} = 'single'
     end
 
     properties
@@ -283,6 +283,8 @@ classdef ListBoxModern < handle
                 obj.Name = {};
                 obj.Icon = {};
             end
+
+            obj.Items = obj.Name;
         end
         
         function onRemoveAllItems(obj, ~, ~)
