@@ -232,21 +232,26 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
 
             if nargin < 3; doNotify = true; end
 
+            % Todo: Remove commented out section below. At the moment, I am
+            % not sure why this was added, as it seems more reliable to
+            % always use the id.
+
             % Handle controlled instances
-            if startsWith(id, "https://openminds.ebrains.eu/instances/") % Todo: Support v4 and above 
-                [~, instanceName] = fileparts(id);
-                if any(strcmp(string(comp.ItemsData), instanceName))
-                    comp.updateValue(instanceName, comp.Value, doNotify)
-                end
-            else
-                allIdentifiers = cellfun(@(c) c.id , comp.ItemsData, 'uni', 0);
+            % if startsWith(id, "https://openminds.ebrains.eu/instances/") % Todo: Support v4 and above 
+            %     [~, instanceName] = fileparts(id);
+            %     if any(strcmp(string(comp.ItemsData), instanceName))
+            %         comp.updateValue(instanceName, comp.Value, doNotify)
+            %     end
+            % else
+                allIdentifiers = cellfun(@(c) c.id , comp.ItemsData, 'uni', 1);
                 if any(strcmp(allIdentifiers, id))
                     newValue =  comp.ItemsData{ strcmp(allIdentifiers, id) };
                     comp.updateValue(newValue, comp.Value, doNotify)
                 else
+                    % Todo: Improve error message
                     error('No instance with given identifier')
                 end
-            end
+            % end
         end
 
         function resetSelection(comp)
