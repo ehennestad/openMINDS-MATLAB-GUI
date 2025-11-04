@@ -32,10 +32,11 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     instanceName = string.empty;
 
     if isa(instanceSpec, 'char') || isa(instanceSpec, 'string')
-
+        mode = "create";
         typeClassFcn = str2func(instanceSpec);
         metadataInstance = arrayfun(@(i) typeClassFcn(), 1:options.NumInstances);
     else
+        mode = "edit";
         if iscell(instanceSpec)
             metadataInstance = [instanceSpec{:}];
         else
@@ -61,7 +62,11 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     % Todo: Improve pluralisation or skip altogether
     if options.NumInstances > 1; classNameLabel = [className, 's']; end
 
-    titleStr = sprintf('Create New %s', classNameLabel);
+    if mode == "create"
+        titleStr = sprintf('Create New %s', classNameLabel);
+    elseif mode == "edit"
+        titleStr = sprintf('Edit %s', classNameLabel);
+    end
 
     % titleStr = om.internal.text.getEditorTitle(...
     %     "InstanceType", className, ...
@@ -75,7 +80,7 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     if isConfigured(formCache) && isKey(formCache, className) && hasFigure(formCache(className))
         hEditor = formCache(className);
         hEditor.show();
-
+        hEditor.Data = SNew;
         uiwait(hEditor, true)
 
         wasAborted = hEditor.FinishState ~= "Finished";
