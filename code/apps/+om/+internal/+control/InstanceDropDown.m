@@ -233,12 +233,11 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
             if nargin < 3; doNotify = true; end
 
             % Handle controlled instances
-            if startsWith(id, "https://openminds.ebrains.eu/instances/")
+            if startsWith(id, "https://openminds.ebrains.eu/instances/") % Todo: Support v4 and above 
                 [~, instanceName] = fileparts(id);
                 if any(strcmp(string(comp.ItemsData), instanceName))
                     comp.updateValue(instanceName, comp.Value, doNotify)
                 end
-
             else
                 allIdentifiers = cellfun(@(c) c.id , comp.ItemsData, 'uni', 0);
                 if any(strcmp(allIdentifiers, id))
@@ -317,8 +316,12 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
     methods (Access = private)
         function postSetValue(comp)
             if isempty(comp.Value)
-                assert(isa(comp.Value, comp.MetadataType), ...
-                    'Something unexpected happened (dropdown value is not of expected type)')
+                isValidValue = isa(comp.Value, comp.ActiveMetadataType.ClassName) ...
+                                || isa(comp.Value, comp.MetadataType);
+                assert(isValidValue, ...
+                    'openMINDS_GUI:InstanceDropDown:InvalidType', ...
+                    ['Could not set value of instance dropdown. Got type "%s", ', ...
+                    'expected "%s"'], class(comp.Value), comp.ActiveMetadataType.ClassName)
 
                 comp.DropDown.ValueIndex = 1;
                 return
