@@ -24,9 +24,9 @@ classdef InteractiveOpenMINDSPlot < handle
     end
 
     properties (Access = protected) % graphical
-        Axes
-        GraphPlot
-        NodeTransporter
+        Axes matlab.graphics.axis.Axes
+        GraphPlot matlab.graphics.chart.primitive.GraphPlot
+        NodeTransporter GraphNodeTransporter
         PointerManager
         DataTip
         ActiveNode
@@ -54,35 +54,21 @@ classdef InteractiveOpenMINDSPlot < handle
                 obj.Axes = axes(f, 'Position', [0.05,0.05,0.9,0.9]);
             end
 
-            obj.updateGraph(graphObj)
-
-            obj.GraphPlot.ButtonDownFcn = @obj.onMousePressedInGraph;
-            
-            % obj.GraphPlot.EdgeLabel = e;
-
             obj.Axes.YDir = 'normal';
             hFigure = ancestor(obj.Axes, 'figure');
-            obj.PointerManager = uim.interface.pointerManager(hFigure, ...
-                obj.Axes, {'zoomIn', 'zoomOut', 'pan'});
-            addlistener(hFigure, 'WindowKeyPress', @obj.keyPress);
-
-            %obj.plotMouseOverElements()
-           
-
-            % Does not work for uifigure
-            % obj.MouseMotionListener = listener(hFigure, "WindowMouseMotion", ...
-            %     @obj.onWindowMouseMotion);
-            % obj.Axes.YDir = 'reverse';
 
             %--- Install pointer manager on the figure
             iptPointerManager(hFigure,'enable');
 
-            obj.addPointerBehaviorToGraph()
-            %--- Pointer behavior attached to the GRAPH OBJECT
-            pb.enterFcn    = @(fig, h) obj.onMouseMotionInGraph(fig, h);        % default pointer
-            pb.exitFcn     = @(fig, h) obj.hideGraphNodeDataTip(fig);           % hide tooltip
-            pb.traverseFcn = @(fig, h) obj.onMouseMotionInGraph(fig, h);   % update while moving
-            iptSetPointerBehavior(obj.GraphPlot, pb);
+            obj.updateGraph(graphObj)
+
+            obj.PointerManager = uim.interface.pointerManager(hFigure, ...
+                obj.Axes, {'zoomIn', 'zoomOut', 'pan'});
+            addlistener(hFigure, 'WindowKeyPress', @obj.keyPress);
+           
+            % Does not work for uifigure
+            % obj.MouseMotionListener = listener(hFigure, "WindowMouseMotion", ...
+            %     @obj.onWindowMouseMotion);
         end
     end
 
@@ -110,6 +96,8 @@ classdef InteractiveOpenMINDSPlot < handle
             % obj.GraphPlot = plot(obj.Axes, graphObj, 'Layout', 'force');
             obj.GraphPlot = plot(obj.Axes, obj.DirectedGraph, 'Layout', obj.Layout);
             % obj.GraphPlot.NodeLabel = obj.DirectedGraph.Nodes.Name;
+            % obj.GraphPlot.EdgeLabel = e;
+
             obj.GraphPlot.NodeLabel = [];
             numNodes = obj.DirectedGraph.numnodes;
             colors = colormap(obj.Axes, obj.ColorMap);
@@ -117,8 +105,9 @@ classdef InteractiveOpenMINDSPlot < handle
             randIdx = round(randperm(numNodes, numNodes)/numNodes*256);
 
             nodeIds = obj.DirectedGraph.Nodes.Name;
+            % isInstances = ~startsWith(nodeIds, 'https'); Todo: Remove?
+
             nodeTypes = obj.DirectedGraph.Nodes.Type;
-            isInstances = ~startsWith(nodeIds, 'https');
 
             uniqueInstanceTypes = unique(nodeTypes);
             uniqueIdx = round(linspace(1,256,numel(uniqueInstanceTypes)));
@@ -275,13 +264,15 @@ classdef InteractiveOpenMINDSPlot < handle
             obj.ActiveNode.YData = nan;
             set(hFigure,'Pointer','arrow')
         end
-    
+
         function addPointerBehaviorToGraph(obj)
-            %--- Pointer behavior attached to the GRAPH OBJECT
-            pb.enterFcn    = @(fig, h) obj.onMouseMotionInGraph(fig, h);        % default pointer
-            pb.exitFcn     = @(fig, h) obj.hideGraphNodeDataTip(fig);           % hide tooltip
-            pb.traverseFcn = @(fig, h) obj.onMouseMotionInGraph(fig, h);   % update while moving
-            iptSetPointerBehavior(obj.GraphPlot, pb);
+        % addPointerBehaviorToGraph - Attach pointer behavior to graph object
+            if ~isempty(obj.GraphPlot)
+                pb.enterFcn    = @(fig, h) obj.onMouseMotionInGraph(fig, h);
+                pb.exitFcn     = @(fig, h) obj.hideGraphNodeDataTip(fig);
+                pb.traverseFcn = @(fig, h) obj.onMouseMotionInGraph(fig, h);
+                iptSetPointerBehavior(obj.GraphPlot, pb);        
+            end
         end
     end
 end
