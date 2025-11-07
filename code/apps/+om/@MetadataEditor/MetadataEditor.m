@@ -395,8 +395,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             set([panels{:}], ...
                 'Units', 'pixels', ...
-                'BackgroundColor', 'w', ...
                 'BorderType',borderType)
+
+            obj.updateBackgroundColorForPanels()
         end
 
         function createTabGroup(obj)
