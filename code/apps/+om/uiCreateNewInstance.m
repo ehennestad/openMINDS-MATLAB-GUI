@@ -37,7 +37,7 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
         typeClassFcn = str2func(instanceSpec);
         metadataInstance = arrayfun(@(i) typeClassFcn(), 1:options.NumInstances);
     else
-        mode = "edit";
+        mode = "modify";
         if iscell(instanceSpec)
             metadataInstance = [instanceSpec{:}];
         else
@@ -65,7 +65,7 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
 
     if mode == "create"
         titleStr = sprintf('Create New %s', classNameLabel);
-    elseif mode == "edit"
+    elseif mode == "modify"
         titleStr = sprintf('Edit %s', classNameLabel);
     end
 
@@ -85,6 +85,12 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
 
         if ~isempty(options.ProgressMonitor)
             options.ProgressMonitor.Message = "Waiting for user input...";
+        end
+
+        if mode == "create"
+            hEditor.OkButtonText = 'Create';
+        elseif mode == "modify"
+            hEditor.OkButtonText = 'Save';
         end
 
         uiwait(hEditor, true)

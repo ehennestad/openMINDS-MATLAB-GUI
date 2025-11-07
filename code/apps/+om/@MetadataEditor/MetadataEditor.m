@@ -550,6 +550,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         function initializeTableContextMenu(obj)
             % Create table context menu (for table body)
             [menuInstance, graphicsMenu] = om.TableContextMenu(obj.Figure);
+            menuInstance.EditInstanceFcn = @obj.onEditMetadataInstanceClicked;
             menuInstance.DeleteItemFcn = @obj.onDeleteMetadataInstanceClicked;
             menuInstance.ExportToWorkspaceFcn = @obj.onExportToWorkspaceClicked;
             obj.UIMetaTableViewer.TableContextMenu = graphicsMenu;
@@ -960,6 +961,52 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         function onExportToWorkspaceClicked(obj, ~, ~)
             % Export selected instance(s) to workspace
             obj.exportToWorkspace()
+        end
+
+        function onEditMetadataInstanceClicked(obj, ~, ~)
+            % Edit selected metadata instance interactively
+            % Only allows editing a single instance at a time
+            
+            selectedIdx = obj.UIMetaTableViewer.getSelectedEntries();
+            
+            % Check if exactly one instance is selected
+            if isempty(selectedIdx)
+                obj.uialert('No instance selected. Please select an instance to edit.', ...
+                    'No Selection', 'Icon', 'warning');
+                return
+            elseif numel(selectedIdx) > 1
+                obj.uialert('Multiple instances selected. Please select only one instance to edit.', ...
+                    'Multiple Selection', 'Icon', 'warning');
+                return
+            end
+            
+            % Get the instance ID and retrieve the instance
+            instanceID = obj.CurrentTableInstanceIds{selectedIdx};
+            schemaInstance = obj.MetadataCollection.get(instanceID);
+            
+            % Open the interactive editor
+            try
+                editedInstance = om.uiCreateNewInstance(schemaInstance, obj.MetadataCollection, ...
+                    "Mode", "modify");
+                
+                if ~isempty(editedInstance)
+                    
+                    % Update node links. (Mis)Using add, should add method for
+                    % updating node links directly (TODO)
+                    obj.MetadataCollection.add(editedInstance, ...
+                        'AddSubNodesOnly', true, ...
+                        'AbortIfNodeExists', false);
+
+                    % Update the graph to reflect changes in linked properties
+                    % Need to trigger that manually here
+                    obj.MetadataCollection.updateGraphAfterInstanceModification(instanceID);
+                    
+                    obj.HasUnsavedChanges = true;
+                end
+            catch ME
+                obj.uialert(sprintf('Error editing instance: %s', ME.message), ...
+                    'Edit Error', 'Icon', 'error');
+            end
         end
 
         function onMouseDoubleClickedInTable(obj, ~, evt)

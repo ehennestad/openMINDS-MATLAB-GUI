@@ -3,6 +3,7 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
     properties
         DeleteItemFcn
         ExportToWorkspaceFcn
+        EditInstanceFcn
     end
 
     properties (Access = private)
@@ -11,6 +12,7 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
 
         UIMenuItemDeleteItem
         UIMenuItemExportToWorkspace
+        UIMenuItemEditInstance
     end
 
     methods
@@ -47,10 +49,18 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
             obj.ExportToWorkspaceFcn = value;
             obj.postSetExportToWorkspaceFcn()
         end
+
+        function set.EditInstanceFcn(obj, value)
+            obj.EditInstanceFcn = value;
+            obj.postSetEditInstanceFcn()
+        end
     end
 
     methods (Access = private)
         function createMenuItems(obj)
+            obj.UIMenuItemEditInstance = uimenu(obj.UIContextMenu, ...
+                "Text", "Edit instance");
+            
             obj.UIMenuItemExportToWorkspace = uimenu(obj.UIContextMenu, ...
                 "Text", "Export to workspace");
 
@@ -59,6 +69,7 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
         end
 
         function assignMenuItemCallbacks(obj)
+            obj.UIMenuItemEditInstance.Callback = obj.EditInstanceFcn;
             obj.UIMenuItemDeleteItem.Callback = obj.DeleteItemFcn;
             obj.UIMenuItemExportToWorkspace.Callback = obj.ExportToWorkspaceFcn;
         end
@@ -72,6 +83,10 @@ classdef TableContextMenu < handle & matlab.mixin.SetGet
 
         function postSetExportToWorkspaceFcn(obj)
             obj.UIMenuItemExportToWorkspace.Callback = obj.ExportToWorkspaceFcn;
+        end
+
+        function postSetEditInstanceFcn(obj)
+            obj.UIMenuItemEditInstance.Callback = obj.EditInstanceFcn;
         end
     end
 end
