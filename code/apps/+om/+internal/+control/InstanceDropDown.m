@@ -690,6 +690,12 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                     controlledInstances = eval(sprintf('%s.CONTROLLED_INSTANCES', comp.ActiveMetadataType.ClassName));
                     controlledInstances = arrayfun(@(x)feval(comp.ActiveMetadataType.ClassName, x), controlledInstances);
                     itemsData = unique([itemsData, controlledInstances]);
+
+                    % Uniqueness currently only deals with handle equality,
+                    % add a uniqueness check for instance ids as well:
+                    instanceIds = [itemsData.id];
+                    [~, iA] = unique(instanceIds, 'stable');
+                    itemsData = itemsData(iA);
                 end
 
                 if ~isempty(comp.MetadataTypeConstraints)

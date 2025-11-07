@@ -1,24 +1,36 @@
 function instance = fromStruct(instance, data, metadataCollection) %#ok<INUSD>
+% fromStruct - Update properties of a metadata instance from a structure
 
     propNames = properties(instance);
 
     for i = 1:numel(propNames)
         iPropName = propNames{i};
         iValue = instance.(iPropName);
+        iNewValue = data.(iPropName);
 
+        % Update with empty value
+        if isempty(iNewValue)
+            if ~isempty(iValue)
+                if isstring(iValue) && iValue == ""
+                    continue % Should not make scalar string empty
+                end
+                instance.(iPropName)(:) = [];
+            end
+            continue
+        end
+
+        % Type specific update
         if isenum(iValue)
             enumFcn = str2func( class(iValue) );
-            instance.(iPropName) = enumFcn(data.(iPropName));
+            instance.(iPropName) = enumFcn(iNewValue);
         elseif iscategorical(iValue)
-            instance.(iPropName) = char(data.(iPropName));
+            instance.(iPropName) = char(iNewValue);
         elseif isstring(iValue)
-            instance.(iPropName) = char(data.(iPropName));
+            instance.(iPropName) = char(iNewValue);
         elseif isnumeric(iValue)
-            instance.(iPropName) = cast(data.(iPropName), class(instance.(iPropName)));
+            instance.(iPropName) = cast(iNewValue, class(instance.(iPropName)));
         elseif isa(iValue, 'openminds.abstract.ControlledTerm')
-            % instance.(iPropName) = char(data.(iPropName));
-
-            linkedInstance = data.(iPropName);
+            linkedInstance = iNewValue;
 
             % Unpack instances from cell arrays (Todo: function for this)
             if isa(linkedInstance, 'cell')
@@ -33,7 +45,7 @@ function instance = fromStruct(instance, data, metadataCollection) %#ok<INUSD>
             instance.(iPropName) = string(linkedInstance);
 
         elseif isa(iValue, 'openminds.abstract.Schema')
-            linkedInstance = data.(iPropName);
+            linkedInstance = iNewValue;
             schemaName = class(instance.(iPropName));
 
             % Unpack instances from cell arrays
@@ -62,7 +74,7 @@ function instance = fromStruct(instance, data, metadataCollection) %#ok<INUSD>
 
             instance.(iPropName) = linkedInstance;
         elseif isa(iValue, 'openminds.internal.abstract.MixedTypeSet')
-            linkedInstance = data.(iPropName);
+            linkedInstance = iNewValue;
 
             if isa(linkedInstance, 'cell')
                 linkedInstance = [linkedInstance{:}];

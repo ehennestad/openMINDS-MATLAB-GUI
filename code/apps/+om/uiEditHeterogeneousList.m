@@ -10,7 +10,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
     schemaName = typePathSplit{end-1};
     propertyName = typePathSplit{end};
 
-    % Sometimes mixed types comes in as "homogeneous" types.
+    % Sometimes a mixed type comes in as a "homogeneous" types.
     metaSchema = openminds.internal.meta.Type( openminds.enum.Types(schemaName).ClassName );
     if metaSchema.isPropertyMixedType(propertyName)
         className = metaSchema.getMixedTypeForProperty(propertyName);
@@ -118,10 +118,10 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
                     end
                 else
                     if isa(metadataInstances, 'openminds.abstract.Schema')
-                        isInstance = strcmp( {metadataInstances.id}, iData.id );
+                        isInstance = strcmp( [metadataInstances.id], iData.id );
                         iInstance = metadataInstances(isInstance);
                     elseif isa(metadataInstances, 'openminds.internal.abstract.MixedTypeSet')
-                        instanceIds = arrayfun(@(x) x.Instance.id, metadataInstances, 'uni', false);
+                        instanceIds = arrayfun(@(x) x.Instance.id, metadataInstances, 'uni', true);
                         isInstance = strcmp( instanceIds, iData.id );
                         if any(isInstance)
                             iInstance = metadataInstances(isInstance).Instance; % Todo: Fix for .Instance
@@ -132,8 +132,13 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
                         error('Unkown class for metadata instance')
                     end
                 end
+
                 if isempty(iInstance)
-                    iInstance = feval(openmindsType);
+                    if contains(openmindsType, '.controlledterm') % Todo: Special handling of term suggestion
+                        iInstance = feval( openmindsType, iData.id ); % Create a controlled instance
+                    else
+                        iInstance = feval( openmindsType ); % Create a new instance;
+                    end
                 end
             else
                 iInstance = feval( openmindsType );

@@ -1,10 +1,20 @@
 classdef InteractiveOpenMINDSPlot < handle
-
+    % InteractiveOpenMINDSPlot Interactive visualization of openMINDS metadata graphs
     %
-    % [ ] Mouseover effects. Hand, magnify node and label
+    % Usage:
+    %   % Basic usage
+    %   plot = InteractiveOpenMINDSPlot(graphObj, hAxes);
+    %
+    %   % With UICollection for incremental updates
+    %   uiCollection = om.ui.UICollection();
+    %   plot = InteractiveOpenMINDSPlot(uiCollection.graph, hAxes);
+    %   plot.attachUICollection(uiCollection);
+    %   % Now when instances are modified, the plot updates incrementally
+    %
+    % [ ] Mouseover effects. Hand, magnify node and label
     % [ ] Custom text labels
-    % [ ] Node Doubleclick Action
-    % [ ] Add methods for plotting subgraps? Or should that be a separate
+    % [ ] Node Doubleclick Action
+    % [ ] Add methods for plotting subgraps? Or should that be a separate
     %     panel in the main app for plotting subgraphs?
 
     % Todo:
@@ -21,6 +31,7 @@ classdef InteractiveOpenMINDSPlot < handle
 
     properties (Access = protected) % data
         DirectedGraph
+        UICollection % Reference to the UICollection for listening to events
     end
 
     properties (Access = protected) % graphical
@@ -36,6 +47,9 @@ classdef InteractiveOpenMINDSPlot < handle
         IsMouseInGraph (1,1) logical = false
         IsMouseButtonDown (1,1) logical = false
         MouseReleaseListener event.listener
+        GraphUpdateListener event.listener
+        IsUpdateEnabled (1,1) logical = true  % Controls whether graph updates are processed
+        IsGraphDirty (1,1) logical = false     % Tracks if graph has pending updates
     end
 
     properties (Access = protected)
@@ -86,6 +100,11 @@ classdef InteractiveOpenMINDSPlot < handle
             end
 
             if isempty(obj.DirectedGraph.Nodes)
+                return
+            end
+
+            if ~obj.IsUpdateEnabled
+                obj.IsGraphDirty = true;
                 return
             end
 
@@ -146,6 +165,98 @@ classdef InteractiveOpenMINDSPlot < handle
 
         function keyPress(obj, ~, event)
             wasCaptured = obj.PointerManager.onKeyPress([], event);
+        end
+
+        function attachUICollection(obj, uiCollection)
+            % attachUICollection Connect to a UICollection to receive graph update events
+            %
+            % This enables incremental graph updates instead of full rebuilds
+            
+            obj.UICollection = uiCollection;
+            
+            % Update DirectedGraph to reference the UICollection's graph
+            obj.DirectedGraph = uiCollection.graph;
+            
+            % Clean up old listener if it exists
+            if ~isempty(obj.GraphUpdateListener) && isvalid(obj.GraphUpdateListener)
+                delete(obj.GraphUpdateListener);
+            end
+            
+            % Listen to GraphUpdated events
+            obj.GraphUpdateListener = addlistener(uiCollection, 'GraphUpdated', ...
+                @obj.onGraphUpdated);
+        end
+
+        function enableUpdates(obj)
+            % enableUpdates Enable immediate graph updates
+            obj.IsUpdateEnabled = true;
+        end
+
+        function disableUpdates(obj)
+            % disableUpdates Disable immediate graph updates (marks as dirty instead)
+            obj.IsUpdateEnabled = false;
+        end
+
+        function updateIfDirty(obj)
+            % updateIfDirty Update the graph if it has pending changes
+            if obj.IsGraphDirty
+                obj.IsUpdateEnabled = true;  % Temporarily enable updates
+                if ~isempty(obj.UICollection)
+                    obj.updateGraph(obj.UICollection.graph);
+                else
+                    obj.updateGraph();
+                end
+                obj.IsGraphDirty = false;    % Mark as clean
+            end
+        end
+
+        function onGraphUpdated(obj, ~, evtData)
+            % onGraphUpdated Handle incremental graph updates
+            %
+            % This method updates only what changed instead of rebuilding everything
+            
+            % Skip updates if not enabled (e.g., graph tab not visible)
+            if ~obj.IsUpdateEnabled
+                obj.IsGraphDirty = true;
+                return
+            end
+            
+            % Get the current graph from UICollection (digraph is a value class)
+            % IMPORTANT: Always update DirectedGraph to get the latest graph state
+            if ~isempty(obj.UICollection)
+                currentGraph = obj.UICollection.graph;
+                obj.DirectedGraph = currentGraph; % Update the local copy
+            else
+                currentGraph = obj.DirectedGraph;
+            end
+            
+            % Mark as clean since we're processing the update
+            obj.IsGraphDirty = false;
+            
+            switch evtData.UpdateType
+                case 'NODE_LABEL_CHANGED'
+                    % The DirectedGraph has been updated, so mouseover will now show correct label
+                    % Update only the DataTip if this is the active node
+                    if ~isempty(evtData.NodeIndex) && evtData.NodeIndex <= numnodes(currentGraph)
+                        % Update the DataTip if this is the active node
+                        if ~isempty(obj.ActiveNode.XData) && ~isnan(obj.ActiveNode.XData) && ...
+                           obj.ActiveNode.XData == obj.GraphPlot.XData(evtData.NodeIndex) && ...
+                           obj.ActiveNode.YData == obj.GraphPlot.YData(evtData.NodeIndex)
+                            obj.DataTip.String = sprintf('%s (%s)', ...
+                                currentGraph.Nodes.Label{evtData.NodeIndex}, ...
+                                currentGraph.Nodes.Type{evtData.NodeIndex});
+                        end
+                    end
+                    
+                case 'FULL_REBUILD'
+                    % Full rebuild is still needed in some cases
+                    obj.updateGraph();
+                    
+                otherwise
+                    % For other update types, do a full rebuild for now
+                    % Can be optimized later for specific cases
+                    obj.updateGraph();
+            end
         end
     end
 
