@@ -756,6 +756,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             if selectedTab == obj.UIContainer.UITab(2)
                 % Switching to Graph Viewer - enable updates and apply any pending changes
                 obj.UIGraphViewer.enableUpdates();
+                [~, dlgCleanup] = obj.uiprogressdlg('Updating graph view...');
                 obj.UIGraphViewer.updateIfDirty();
             else
                 % Switching away from Graph Viewer - disable updates for performance
