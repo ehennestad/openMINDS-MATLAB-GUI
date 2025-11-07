@@ -132,8 +132,13 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
                         error('Unkown class for metadata instance')
                     end
                 end
+
                 if isempty(iInstance)
-                    iInstance = feval(openmindsType);
+                    if contains(openmindsType, '.controlledterm') % Todo: Special handling of term suggestion
+                        iInstance = feval( openmindsType, iData.id ); % Create a controlled instance
+                    else
+                        iInstance = feval( openmindsType ); % Create a new instance;
+                    end
                 end
             else
                 iInstance = feval( openmindsType );
