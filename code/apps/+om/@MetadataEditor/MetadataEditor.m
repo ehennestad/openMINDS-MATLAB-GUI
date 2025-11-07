@@ -371,6 +371,10 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.Figure.NumberTitle = 'off';
             obj.Figure.MenuBar = 'none';
             obj.Figure.ToolBar = 'none';
+                        
+            if isprop(obj.Figure, 'Theme') && ~isempty(obj.Figure.Theme)
+                obj.Figure.ThemeChangedFcn = @obj.updateTheme;
+            end
         end
 
         function createPanels(obj)
@@ -592,11 +596,10 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 obj.UINoInstancesText = uilabel(obj.UIContainer.UITab(1), ...
                     'Text', 'No instances available', ...
                     'FontSize', 18, ...
-                    'FontColor', [0.4, 0.4, 0.4], ...
-                    'BackgroundColor', [0.94,0.94,0.94], ...
                     'HorizontalAlignment', 'center', ...
                     'Position', [labelX, labelY, labelWidth, labelHeight], ...
                     'Visible', 'off');
+                obj.updateThemeForNoInstancesText();
             end
         end
 
@@ -604,30 +607,54 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         %plotLogo Plot openMINDS logo in the logo panel
 
             % Load the logo from file
-            logoFilename = om.MetadataEditor.getLogoFilepath();
-
-            if ~exist(logoFilename, 'file')
-                fprintf('Downloading openMINDS logo...'); fprintf(newline)
-                obj.downloadOpenMindsLogo()
-                fprintf('Download finished'); fprintf(newline)
-            end
-
-            [C, ~, A] = imread(logoFilename);
+            baseColorStyle = obj.getBaseColorStyle();
+            [C, A] = obj.loadOpenMindsLogo(baseColorStyle);
 
             % Create axes for plotting logo
-            ax = axes(obj.UIPanel.Logo, 'Position', [0,0,1,1]);
+            ax = axes(obj.UIPanel.Logo, 'Position', [0,0,1,1], 'Tag', 'LogoAxes');
 
             % Plot logo as image
             hImage = image(ax, 'CData', C);
             hImage.AlphaData = A;
+            hImage.Tag = 'LogoImage';
 
             % Customize axes
-            ax.Color = 'white';
             ax.YDir = 'reverse';
             ax.Visible = 'off';
             hold(ax, 'on')
             om.internal.graphics.centerImageInAxes(ax, hImage)
             om.internal.graphics.disableAxesToolbar(ax)
+        end
+
+        function updateOpenMindsLogo(obj)
+            % Update image for openMINDS logo
+            
+            % Load the logo from file
+            baseColorStyle = obj.getBaseColorStyle();
+            [C, A] = obj.loadOpenMindsLogo(baseColorStyle);
+
+            hImage = findobj(obj.Figure, 'type', 'image', '-and', 'Tag', 'LogoImage');
+            hImage.CData = C;
+            hImage.AlphaData = A;
+        end
+
+        function updateThemeForNoInstancesText(obj)
+            baseColorStyle = obj.getBaseColorStyle();
+            
+            fontColor = [0.4, 0.4, 0.4];
+            backgroundColor = obj.Figure.Color;
+
+            if strcmp(baseColorStyle, 'dark')
+                fontColor = fliplightness(fontColor);
+            end
+
+            obj.UINoInstancesText.FontColor = fontColor;
+            obj.UINoInstancesText.BackgroundColor = backgroundColor;
+        end
+
+        function updateBackgroundColorForPanels(obj)
+            panels = struct2cell(obj.UIPanel);
+            set([panels{:}], 'BackgroundColor', obj.Figure.Color);
         end
 
         function configureFigureInteractionCallbacks(obj)
@@ -640,6 +667,20 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             % [~, hJ] = evalc('findjobj(obj.Figure)');
             % hJ(2).KeyPressedCallback = @obj.onKeyPressed;
             % hJ(2).KeyReleasedCallback = @obj.onKeyReleased;
+        end
+    
+        function updateTheme(obj, src, evt)
+            obj.updateBackgroundColorForPanels()
+            obj.updateOpenMindsLogo()
+            obj.updateThemeForNoInstancesText()
+        end
+    
+        function baseColorStyle = getBaseColorStyle(obj)
+            if isprop(obj.Figure, 'Theme') && ~isempty(obj.Figure.Theme)
+                baseColorStyle = obj.Figure.Theme.BaseColorStyle;
+            else
+                baseColorStyle = "light";
+            end
         end
     end
 
@@ -1444,10 +1485,13 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             tf = ~isempty(regexp(value, 'No \w* available', 'once'));
         end
 
-        function [CData, AlphaData] = loadOpenMindsLogo()
+        function [CData, AlphaData] = loadOpenMindsLogo(theme)
+            arguments
+                theme (1,1) string {mustBeMember(theme, ["light", "dark"])} = "light"
+            end
 
             % Load the logo from file
-            logoFilename = om.MetadataEditor.getLogoFilepath();
+            logoFilename = om.MetadataEditor.getLogoFilepath(theme);
 
             if ~exist(logoFilename, 'file')
                 fprintf('Downloading openMINDS logo...'); fprintf(newline)
@@ -1463,13 +1507,16 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             websave(om.MetadataEditor.getLogoFilepath(), logoUrl);
         end
 
-        function logoFilepath = getLogoFilepath()
+        function logoFilepath = getLogoFilepath(theme)
+            arguments
+                theme (1,1) string {mustBeMember(theme, ["light", "dark"])} = "light"
+            end
 
             logoFilepath = fullfile(...
                 om.internal.rootpath(), ...
                 'resources', ...
                 'img', ...
-                'openMINDS_logo_light.png');
+                sprintf('openMINDS_logo_%s.png', theme));
         end
     end
 
