@@ -21,6 +21,7 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
         options.UpstreamInstancePropertyName (1,1) string = missing
         options.NumInstances = 1
         options.Mode (1,1) string {mustBeMember(options.Mode, ["create", "modify"])} = "create"
+        options.ProgressMonitor = []
     end
 
     persistent formCache
@@ -81,6 +82,11 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
         hEditor = formCache(className);
         hEditor.show();
         hEditor.Data = SNew;
+
+        if ~isempty(options.ProgressMonitor)
+            options.ProgressMonitor.Message = "Waiting for user input...";
+        end
+
         uiwait(hEditor, true)
 
         wasAborted = hEditor.FinishState ~= "Finished";
@@ -103,6 +109,10 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
             hEditor.OkButtonText = 'Save';
         end
 
+        if ~isempty(options.ProgressMonitor)
+            options.ProgressMonitor.Message = "Waiting for user input...";
+        end
+
         uiwait(hEditor, true)
 
         wasAborted = hEditor.FinishState ~= "Finished";
@@ -115,6 +125,10 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     if wasAborted
         metadataInstance = [];
         return
+    end
+
+    if ~isempty(options.ProgressMonitor)
+        options.ProgressMonitor.Message = "Updating metadata collection...";
     end
 
     for i = 1:numel(metadataInstance)
