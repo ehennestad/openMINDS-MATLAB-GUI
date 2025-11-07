@@ -48,6 +48,8 @@ classdef InteractiveOpenMINDSPlot < handle
         IsMouseButtonDown (1,1) logical = false
         MouseReleaseListener event.listener
         GraphUpdateListener event.listener
+        IsUpdateEnabled (1,1) logical = true  % Controls whether graph updates are processed
+        IsGraphDirty (1,1) logical = false     % Tracks if graph has pending updates
     end
 
     properties (Access = protected)
@@ -98,6 +100,11 @@ classdef InteractiveOpenMINDSPlot < handle
             end
 
             if isempty(obj.DirectedGraph.Nodes)
+                return
+            end
+
+            if ~obj.IsUpdateEnabled
+                obj.IsGraphDirty = true;
                 return
             end
 
@@ -180,10 +187,35 @@ classdef InteractiveOpenMINDSPlot < handle
                 @obj.onGraphUpdated);
         end
 
+        function enableUpdates(obj)
+            % enableUpdates Enable immediate graph updates
+            obj.IsUpdateEnabled = true;
+        end
+
+        function disableUpdates(obj)
+            % disableUpdates Disable immediate graph updates (marks as dirty instead)
+            obj.IsUpdateEnabled = false;
+        end
+
+        function updateIfDirty(obj)
+            % updateIfDirty Update the graph if it has pending changes
+            if obj.IsGraphDirty
+                obj.IsUpdateEnabled = true;  % Temporarily enable updates
+                obj.updateGraph();           % Force a full update
+                obj.IsGraphDirty = false;    % Mark as clean
+            end
+        end
+
         function onGraphUpdated(obj, ~, evtData)
             % onGraphUpdated Handle incremental graph updates
             %
             % This method updates only what changed instead of rebuilding everything
+            
+            % Skip updates if not enabled (e.g., graph tab not visible)
+            if ~obj.IsUpdateEnabled
+                obj.IsGraphDirty = true;
+                return
+            end
             
             % Get the current graph from UICollection (digraph is a value class)
             % IMPORTANT: Always update DirectedGraph to get the latest graph state
@@ -193,6 +225,9 @@ classdef InteractiveOpenMINDSPlot < handle
             else
                 currentGraph = obj.DirectedGraph;
             end
+            
+            % Mark as clean since we're processing the update
+            obj.IsGraphDirty = false;
             
             switch evtData.UpdateType
                 case 'NODE_LABEL_CHANGED'

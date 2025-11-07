@@ -118,6 +118,10 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             
             % Attach the UICollection to enable incremental graph updates
             h.attachUICollection(obj.MetadataCollection);
+            
+            % Disable updates initially since Table Viewer tab is shown first
+            % Updates will be enabled when user switches to Graph Viewer tab
+            h.disableUpdates();
 
             % NB NB NB: Some weird bug occurs if this is created before the
             % axes with the graph plot, where the axes current point seems
@@ -391,6 +395,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.UIContainer.TabGroup = uitabgroup(obj.UIPanel.Table);
             obj.UIContainer.TabGroup.Units = 'normalized';
             obj.UIContainer.TabGroup.Position = [0,0,1,1];
+            
+            % Add callback for tab selection changes
+            obj.UIContainer.TabGroup.SelectionChangedFcn = @obj.onTabSelectionChanged;
 
             obj.UIContainer.UITab = gobjects(0);
 
@@ -732,6 +739,30 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             drawnow
         end
 
+        function onTabSelectionChanged(obj, ~, evt)
+            % onTabSelectionChanged Handle tab selection changes for performance optimization
+            %
+            % This method enables/disables graph updates based on which tab is active.
+            % When the Graph Viewer tab is not visible, updates are deferred to improve
+            % performance. When switching to the Graph Viewer, any pending updates are applied.
+            
+            if isempty(obj.UIGraphViewer) || ~isvalid(obj.UIGraphViewer)
+                return;
+            end
+            
+            selectedTab = evt.NewValue;
+            
+            % Check if the Graph Viewer tab is selected (index 2)
+            if selectedTab == obj.UIContainer.UITab(2)
+                % Switching to Graph Viewer - enable updates and apply any pending changes
+                obj.UIGraphViewer.enableUpdates();
+                obj.UIGraphViewer.updateIfDirty();
+            else
+                % Switching away from Graph Viewer - disable updates for performance
+                obj.UIGraphViewer.disableUpdates();
+            end
+        end
+
         function onFigureSizeChanged(app)
             app.updateLayoutPositions()
             % Update the sidebar listbox layout to match new panel size
@@ -825,7 +856,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.MetadataCollection.disableEvent('CollectionChanged')
             om.uiCreateNewInstance(functionName, obj.MetadataCollection, ...
                 "NumInstances", n, ...
-                "ProgressMonitor", dlg)
+                "ProgressMonitor", dlg);
 
             if ~isempty(dlg)
                 dlg.Message = "Updating metadata table...";
@@ -856,7 +887,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             type = eval( sprintf( 'openminds.enum.Types.%s', type) );
             om.uiCreateNewInstance(type.ClassName, obj.MetadataCollection, ...
                 "NumInstances", 1, ...
-                "ProgressMonitor", dlg)
+                "ProgressMonitor", dlg); % Suppress output
 
             if ~isempty(dlg)
                 dlg.Message = "Updating metadata collection...";
@@ -891,6 +922,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             
             obj.MetadataCollection.addEdgesForInstance(evt.IsPropertyOf)
             G = obj.MetadataCollection.graph;
+            
             obj.UIGraphViewer.updateGraph(G);
 
             T = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
