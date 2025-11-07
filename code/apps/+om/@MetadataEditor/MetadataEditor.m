@@ -115,6 +115,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             h = om.internal.graphics.InteractiveOpenMINDSPlot(G, hAxes, e);
             obj.UIGraphViewer = h;
+            
+            % Attach the UICollection to enable incremental graph updates
+            h.attachUICollection(obj.MetadataCollection);
 
             % NB NB NB: Some weird bug occurs if this is created before the
             % axes with the graph plot, where the axes current point seems

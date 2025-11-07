@@ -38,8 +38,8 @@ classdef UICollection < openminds.Collection
         InstanceAdded
         InstanceRemoved
         InstanceModified
+        GraphUpdated
         % TableUpdated ???
-        % GraphUpdated ???
     end
 
     methods % Constructor
@@ -299,6 +299,12 @@ classdef UICollection < openminds.Collection
             % Update Label (display representation of instance)
             newLabel = string(instance);
             obj.graph.Nodes.Label(nodeIdx) = newLabel;
+            
+            % Notify that graph was updated
+            if obj.EventStates('GraphUpdated')
+                evtData = om.ui.uicollection.event.GraphUpdatedEventData('NODE_LABEL_CHANGED', instanceId, nodeIdx);
+                obj.notify('GraphUpdated', evtData);
+            end
         end
 
         function ensureGraphConsistency(obj, options)
