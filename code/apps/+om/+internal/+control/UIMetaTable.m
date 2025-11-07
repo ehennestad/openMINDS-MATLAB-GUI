@@ -104,6 +104,13 @@ classdef UIMetaTable < om.internal.control.abstract.MetaTableViewer
             
             % Update underlying data
             for i = 1:numel(rowIndices)
+                if isstring(obj.MetaTable{rowIndices(i), columnIndices(i)})
+                % Todo: This condition should be more robustly handled
+                % upstream
+                    if ischar(newValues{i})
+                        newValues{i} = string(newValues{i});
+                    end
+                end
                 obj.MetaTable{rowIndices(i), columnIndices(i)} = newValues{i};
             end
             
