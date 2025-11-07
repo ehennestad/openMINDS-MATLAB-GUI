@@ -325,9 +325,15 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             schemaName = obj.CurrentSchemaTableName;
             idx = obj.UIMetaTableViewer.getSelectedEntries();
             schemaInstance = obj.MetadataCollection.getSchemaInstanceByIndex(schemaName, idx);
-
-            varName = matlab.lang.makeValidName( schemaInstance.DisplayString );
+            
+            if isscalar(schemaInstance)
+                varName = matlab.lang.makeValidName( schemaInstance.DisplayString );
+            else
+                typeEnum = openminds.enum.Types.fromClassName(class(schemaInstance));
+                varName = sprintf('%s_array', lower(char(typeEnum)));
+            end
             assignin('base', varName, schemaInstance)
+            fprintf('Metadata instances assigned to workspace variable: %s\n', varName);
         end
 
         function exportCollectionToWorkspace(obj)
