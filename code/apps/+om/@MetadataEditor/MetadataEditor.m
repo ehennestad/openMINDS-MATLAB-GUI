@@ -13,6 +13,8 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 %           available, or show predefined templates...
 %       [ ] Dynamic listbox on left side panel
 
+% https://se.mathworks.com/help/matlab/creating_plots/design-graphics-and-apps-for-different-themes.html
+
 % ABBREVIATIONS:
 %
 %       OM : openMinds
@@ -701,6 +703,9 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             propValue = evt.NewValue;
             if iscategorical(propValue) % Instances might be represented as categorical in ui
                 propValue = string(propValue);
+                if strcmp(propValue, "<no selection>") % No selection mode
+                    propValue = string.empty;
+                end
             end
             obj.MetadataCollection.modifyInstance(instanceID, propName, propValue);
             obj.HasUnsavedChanges = true;
@@ -806,8 +811,23 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                     return
             end
 
+            if ~obj.requiresCompatibilityMode
+                [dlg, dlgCleanup] = obj.uiprogressdlg(...
+                    "Opening metadata form...", ...
+                    "Indeterminate", "on"); %#ok<ASGLU>
+            else
+                dlg = [];
+            end
+
             obj.MetadataCollection.disableEvent('CollectionChanged')
-            om.uiCreateNewInstance(functionName, obj.MetadataCollection, "NumInstances", n)
+            om.uiCreateNewInstance(functionName, obj.MetadataCollection, ...
+                "NumInstances", n, ...
+                "ProgressMonitor", dlg)
+
+            if ~isempty(dlg)
+                dlg.Message = "Updating metadata table...";
+            end
+
             obj.MetadataCollection.enableEvent('CollectionChanged')
             obj.MetadataCollection.notify('CollectionChanged', event.EventData)
 
@@ -822,8 +842,22 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             selectedItems = obj.UISideBar.SelectedItems{1};
             type = openminds.internal.vocab.getSchemaName(selectedItems);
 
+            if ~obj.requiresCompatibilityMode
+                [dlg, dlgCleanup] = obj.uiprogressdlg(...
+                    "Opening metadata form...", ...
+                    "Indeterminate", "on"); %#ok<ASGLU>
+            else
+                dlg = [];
+            end
+
             type = eval( sprintf( 'openminds.enum.Types.%s', type) );
-            om.uiCreateNewInstance(type.ClassName, obj.MetadataCollection, "NumInstances", 1)
+            om.uiCreateNewInstance(type.ClassName, obj.MetadataCollection, ...
+                "NumInstances", 1, ...
+                "ProgressMonitor", dlg)
+
+            if ~isempty(dlg)
+                dlg.Message = "Updating metadata collection...";
+            end
 
             % Todo: update tables...!
             % obj.changeSelection(string(type))
@@ -832,17 +866,27 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         function onMetadataCollectionChanged(obj, ~, ~)
             obj.HasUnsavedChanges = true;  % Mark as having unsaved changes
             
+            if ~obj.requiresCompatibilityMode
+                [dlg, dlgCleanup] = obj.uiprogressdlg(...
+                    "Updating metadata collection...", ...
+                    "Indeterminate", "on"); %#ok<ASGLU>
+            else
+                dlg = [];
+            end
+
             G = obj.MetadataCollection.graph;
             obj.UIGraphViewer.updateGraph(G);
 
             [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
             obj.CurrentTableInstanceIds = ids;
             obj.updateUITable(T)
+            drawnow
         end
 
-        function onMetadataInstanceModified(obj, ~, ~)
+        function onMetadataInstanceModified(obj, src, evt)
             obj.HasUnsavedChanges = true;  % Mark as having unsaved changes
             
+            obj.MetadataCollection.addEdgesForInstance(evt.IsPropertyOf)
             G = obj.MetadataCollection.graph;
             obj.UIGraphViewer.updateGraph(G);
 
@@ -881,6 +925,14 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         %
         %   Check if the currently selected column has an associated table
         %   variable definition with a double click callback function.
+
+            if isempty( evt.Cell ) % click outside rows or column header
+                return
+            end
+
+            if isscalar( evt.Cell ) % click in table column header ? 
+                return
+            end
 
             thisRow = evt.Cell(1); % Clicked row index
             thisCol = evt.Cell(2); % Clicked column index
@@ -1011,7 +1063,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                         else
                             if metaSchema.isPropertyValueScalar(varNames{i})
                                 S(i).HasOptions = true;
-                                S(i).OptionsList = {{'<Select>', '<Create>', '<Download>'}}; % Todo
+                                S(i).OptionsList = {{'<Select>', '<Create>', '<Download>'}}; % Todo: Make categorical?
                                 S(i).IsEditable = false;
                             else
                                 propertyTypeName = instance.X_TYPE + "/" + varNames{i};
