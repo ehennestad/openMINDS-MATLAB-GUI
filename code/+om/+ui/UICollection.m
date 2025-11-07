@@ -21,10 +21,12 @@ classdef UICollection < openminds.Collection
     properties (Access = public)
         % metadata containers.Map
         graph digraph = digraph % Todo: Create a separate class?
+        ValidateGraphOnModification (1,1) logical = false % Control automatic validation for performance
     end
 
     properties (Access = private)
         EventStates
+        InstanceListeners % Map to store listeners for each instance (instanceId -> listeners array)
     end
 
     properties (Dependent) % Todo
@@ -53,6 +55,9 @@ classdef UICollection < openminds.Collection
 
             % Create a graph object
             obj.graph = digraph;
+
+            % Initialize listener tracking
+            obj.InstanceListeners = containers.Map('KeyType', 'char', 'ValueType', 'any');
 
             obj.initializeEventStates()
 
@@ -123,6 +128,9 @@ classdef UICollection < openminds.Collection
 
             % Remove from superclass (handles Nodes and TypeMap)
             remove@openminds.Collection(obj, instance);
+
+            % Clean up listeners for this instance
+            obj.deleteInstanceListeners(instanceId);
 
             % Remove the node from the graph incrementally
             obj.removeInstanceFromGraph(instanceId);
@@ -241,26 +249,56 @@ classdef UICollection < openminds.Collection
             if ~isKey(obj.Nodes, instanceId)
                 return;
             end
+
+            % Get the modified instance
+            instanceCell = obj.Nodes(instanceId);
+            instance = instanceCell{1};
             
-            % Remove all existing edges from this instance
+            % Update node properties (label might have changed)
             if ~isempty(obj.graph.Nodes) && any(strcmp(obj.graph.Nodes.Name, instanceId))
+                obj.updateNodeProperties(instanceId, instance);
+            end
+            
+            % Remove all existing edges from and to this instance
+            if ~isempty(obj.graph.Nodes) && any(strcmp(obj.graph.Nodes.Name, instanceId))
+                % Remove outgoing edges (where this instance is the source)
                 outgoingEdges = find(strcmp(obj.graph.Edges.EndNodes(:,1), instanceId));
                 if ~isempty(outgoingEdges)
                     obj.graph = rmedge(obj.graph, outgoingEdges);
                 end
+                
+                % Remove incoming edges (where this instance is the target)
+                incomingEdges = find(strcmp(obj.graph.Edges.EndNodes(:,2), instanceId));
+                if ~isempty(incomingEdges)
+                    obj.graph = rmedge(obj.graph, incomingEdges);
+                end
             end
             
             % Re-add edges based on current instance state
-            instanceCell = obj.Nodes(instanceId);
-            instance = instanceCell{1};
             obj.addEdgesForInstance(instance);
             
-            % Validate consistency after modification
-            if ~obj.validateGraphConsistency()
-                error('Invalid graph detected')
-                %Todo: But ensure we don't get into infinite recursions
-                obj.repairGraphConsistency();
+            % Re-add incoming edges from instances that reference this one
+            obj.addReverseEdgesForInstance(instance);
+        end
+
+        function updateNodeProperties(obj, instanceId, instance)
+            % updateNodeProperties Updates the properties of a node in the graph
+            % This ensures node Label stays synchronized with instance state
+            
+            if isempty(obj.graph.Nodes) || ~any(strcmp(obj.graph.Nodes.Name, instanceId))
+                return;
             end
+            
+            % Find the node index
+            nodeIdx = find(strcmp(obj.graph.Nodes.Name, instanceId), 1);
+            
+            if isempty(nodeIdx)
+                return;
+            end
+            
+            % Update Label (display representation of instance)
+            newLabel = string(instance);
+            obj.graph.Nodes.Label(nodeIdx) = newLabel;
         end
 
         function ensureGraphConsistency(obj, options)
@@ -305,9 +343,39 @@ classdef UICollection < openminds.Collection
         end
 
         function createInstanceListeners(obj, instance)
-            addlistener(instance, 'InstanceChanged', @obj.onInstanceChanged);
-            addlistener(instance, 'PropertyWithLinkedInstanceChanged', ...
-                @obj.onPropertyWithLinkedInstanceChanged);
+            % Skip if instance already has listeners or is a ControlledTerm
+            if isa(instance, 'openminds.controlledterms.ControlledTerm')
+                return;
+            end
+            
+            instanceId = instance.id;
+            if isKey(obj.InstanceListeners, instanceId)
+                return; % Already has listeners
+            end
+            
+            % Create and store listeners
+            listeners = [
+                addlistener(instance, 'InstanceChanged', @obj.onInstanceChanged);
+                addlistener(instance, 'PropertyWithLinkedInstanceChanged', ...
+                    @obj.onPropertyWithLinkedInstanceChanged)
+            ];
+            
+            obj.InstanceListeners(instanceId) = listeners;
+        end
+
+        function deleteInstanceListeners(obj, instanceId)
+            % Delete and remove listeners for an instance
+            if isKey(obj.InstanceListeners, instanceId)
+                listeners = obj.InstanceListeners(instanceId);
+                % Delete each listener
+                for i = 1:numel(listeners)
+                    if isvalid(listeners(i))
+                        delete(listeners(i));
+                    end
+                end
+                % Remove from map
+                remove(obj.InstanceListeners, instanceId);
+            end
         end
 
         function labels = getSchemaInstanceLabels(obj, schemaName, schemaId)
@@ -321,7 +389,7 @@ classdef UICollection < openminds.Collection
 
             labels = arrayfun(@(i) sprintf('%s-%d', schemaName, i), 1:numSchemas, 'UniformOutput', false);
             if ~isempty(schemaId)
-                isMatchedInstance = strcmp({schemaInstances.id}, schemaId);
+                isMatchedInstance = strcmp([schemaInstances.id], schemaId);
                 labels = labels(isMatchedInstance);
             end
         end
@@ -451,7 +519,7 @@ classdef UICollection < openminds.Collection
                 % instanceName = sprintf('%s (%s)', string(instance), openminds.internal.utility.getSchemaShortName(class(instance)));
 
                 nodeProps = table(string(instanceId), string(instance), string(openminds.internal.utility.getSchemaShortName(class(instance))), ...
-                    'VariableNames', {'Name' 'Label', 'Type'});
+                    'VariableNames', {'Name', 'Label', 'Type'});
 
                 % Add the node to the graph
                 try
@@ -484,9 +552,11 @@ classdef UICollection < openminds.Collection
             fprintf('Graph built with %d nodes and %d edges\n', ...
                 numnodes(obj.graph), numedges(obj.graph));
                 
-            % Validate graph consistency after building
-            if ~obj.validateGraphConsistency()
-                warning('Graph inconsistency detected after building. This may indicate data corruption.');
+            % Optionally validate graph consistency after building
+            if obj.ValidateGraphOnModification
+                if ~obj.validateGraphConsistency()
+                    warning('Graph inconsistency detected after building. This may indicate data corruption.');
+                end
             end
         end
 
@@ -496,6 +566,10 @@ classdef UICollection < openminds.Collection
             % to the graph for any linked instances that are already in the collection.
             % Unlike addInstanceProperties, this method does not add instances to the collection.
 
+            % Collect all edges to add in batch for performance
+            edgeSources = string.empty;
+            edgeTargets = string.empty;
+            
             % Search through public properties of the metadata instance
             % for linked properties
             propertyNames = properties(thisInstance);
@@ -508,35 +582,84 @@ classdef UICollection < openminds.Collection
                 if isa(propValue, 'openminds.abstract.Schema')
 
                     if ~iscell(propValue)
-                        % Add edges for array of instances
+                        % Collect edges for array of instances
                         for k = 1:length(propValue)
                             % Check if the linked instance is in the collection
                             if isKey(obj.Nodes, propValue(k).id)
-                                % Add an edge to the graph representing the relationship
-                                obj.graph = addedge(obj.graph, thisInstance.id, propValue(k).id);
+                                % Add edge only if it doesn't already exist
+                                if ~obj.edgeExists(thisInstance.id, propValue(k).id)
+                                    edgeSources(end+1) = thisInstance.id; %#ok<AGROW>
+                                    edgeTargets(end+1) = propValue(k).id; %#ok<AGROW>
+                                end
                             end
                         end
                     else
-                        % Add edges for cell array of instances
+                        % Collect edges for cell array of instances
                         for k = 1:length(propValue)
                             % Check if the linked instance is in the collection
                             if isKey(obj.Nodes, propValue{k}.id)
-                                % Add an edge to the graph representing the relationship
-                                obj.graph = addedge(obj.graph, thisInstance.id, propValue{k}.id);
+                                % Add edge only if it doesn't already exist
+                                if ~obj.edgeExists(thisInstance.id, propValue{k}.id)
+                                    edgeSources(end+1) = thisInstance.id; %#ok<AGROW>
+                                    edgeTargets(end+1) = propValue{k}.id; %#ok<AGROW>
+                                end
                             end
                         end
                     end
                 elseif openminds.utility.isMixedInstance(propValue)
-                    % Add edges for array of instances
+                    % Collect edges for array of mixed instances
                     for k = 1:length(propValue)
                         % Check if the linked instance is in the collection
                         if isKey(obj.Nodes, propValue(k).Instance.id)
-                            % Add an edge to the graph representing the relationship
-                            obj.graph = addedge(obj.graph, thisInstance.id, propValue(k).Instance.id);
+                            % Add edge only if it doesn't already exist
+                            if ~obj.edgeExists(thisInstance.id, propValue(k).Instance.id)
+                                edgeSources(end+1) = thisInstance.id; %#ok<AGROW>
+                                edgeTargets(end+1) = propValue(k).Instance.id; %#ok<AGROW>
+                            end
                         end
                     end
                 end
             end
+            
+            % Ensure all target nodes exist in the graph with proper properties
+            % before adding edges (prevents addedge from auto-creating nodes without properties)
+            if ~isempty(edgeTargets)
+                uniqueTargets = unique(edgeTargets);
+                for i = 1:length(uniqueTargets)
+                    targetId = uniqueTargets(i);
+                    if ~any(strcmp(obj.graph.Nodes.Name, targetId))
+                        % Target node doesn't exist in graph yet, add it with proper properties
+                        if isKey(obj.Nodes, targetId)
+                            targetInstance = obj.get(targetId);
+                            obj.addInstanceToGraph(targetInstance);
+                        end
+                    end
+                end
+            end
+            
+            % Add all collected edges in batch for better performance
+            if ~isempty(edgeSources)
+                % Concatenate edge sources and targets into a nx2 matrix
+                % where n is the length of edge sources and targets
+                edgeSources = reshape(edgeSources, [], 1);
+                edgeTargets = reshape(edgeTargets, [], 1);
+
+                edgeTable = table([edgeSources, edgeTargets], 'VariableNames', {'EndNodes'});
+                obj.graph = addedge(obj.graph, edgeTable);
+            end
+        end
+
+        function exists = edgeExists(obj, sourceId, targetId)
+            % edgeExists Check if an edge already exists between two nodes
+            % Returns true if edge exists, false otherwise
+            if isempty(obj.graph.Edges)
+                exists = false;
+                return;
+            end
+            
+            % Use findedge for efficient edge detection
+            edgeIdx = findedge(obj.graph, sourceId, targetId);
+            exists = (edgeIdx ~= 0);
         end
 
         function addInstanceToGraph(obj, instance)
@@ -551,11 +674,21 @@ classdef UICollection < openminds.Collection
             instanceId = instance.id;
             
             % Add the instance as a node if it doesn't already exist
-            if ~any(strcmp(obj.graph.Nodes.Name, instanceId))
-                obj.graph = addnode(obj.graph, instanceId);
+            if isempty(obj.graph.Nodes) || ~any(strcmp(obj.graph.Nodes.Name, instanceId))
+                % Add node with properties (consistent with buildGraphFromNodes)
+                nodeProps = table(string(instanceId), string(instance), ...
+                    string(openminds.internal.utility.getSchemaShortName(class(instance))), ...
+                    'VariableNames', {'Name' 'Label', 'Type'});
+                
+                try
+                    obj.graph = addnode(obj.graph, nodeProps);
+                catch ME
+                    warning(ME.message)
+                    obj.graph = addnode(obj.graph, instanceId);
+                end
             end
             
-            % Create listeners for the new instance
+            % Create listeners for the new instance (skips ControlledTerms)
             obj.createInstanceListeners(instance);
             
             % Add edges for this instance's relationships
@@ -590,9 +723,8 @@ classdef UICollection < openminds.Collection
                     
                     % Check various types of references
                     if obj.instanceReferencesTarget(propValue, newInstanceId)
-                        % Add edge from existing to new instance
-                        if ~any(strcmp(obj.graph.Edges.EndNodes(:,1), existingInstanceId) & ...
-                               strcmp(obj.graph.Edges.EndNodes(:,2), newInstanceId))
+                        % Add edge from existing to new instance only if it doesn't exist
+                        if ~obj.edgeExists(existingInstanceId, newInstanceId)
                             obj.graph = addedge(obj.graph, existingInstanceId, newInstanceId);
                         end
                     end
@@ -759,8 +891,10 @@ classdef UICollection < openminds.Collection
         end
 
         function addInstanceProperties(obj, thisInstance)
-            % Search through public properties of the metadata instance
-            % for linked properties and add them to the graph
+            % addInstanceProperties Recursively adds linked instances to collection and graph
+            % This method searches through an instance's properties, adds any linked
+            % instances to the collection, and updates the graph accordingly.
+            
             propertyNames = properties(thisInstance);
 
             for j = 1:length(propertyNames)
@@ -769,52 +903,30 @@ classdef UICollection < openminds.Collection
                 if isempty(propValue); continue; end
 
                 if isa(propValue, 'openminds.abstract.Schema')
-
-                    if ~iscell(propValue)
-                        % Recursively add the new type to the collection and the new node to the graph
-                        for k = 1:length(propValue)
-                            % Add the instance to the collection
-                            obj.add(propValue(k));
-
-                            % Add the node to the graph if it doesn't exist
-                            if ~isempty(obj.graph.Nodes)
-                                foundNode = findnode(obj.graph, propValue(k).id);
-                            else
-                                foundNode = 0;
-                            end
-
-                            if foundNode == 0
-                                obj.graph = addnode(obj.graph, propValue(k).id);
-                                obj.createInstanceListeners(propValue(k));
-                            end
-
-                            % Add an edge to the graph representing the relationship
-                            obj.graph = addedge(obj.graph, thisInstance.id, propValue(k).id);
-                        end
+                    % Handle both cell and non-cell arrays of instances
+                    if iscell(propValue)
+                        instanceArray = [propValue{:}];
                     else
-                        % Recursively add the new type to the collection and the new node to the graph
-                        for k = 1:length(propValue)
-                            % Add the instance to the collection
-                            obj.add(propValue{k});
-
-                            % Add the node to the graph if it doesn't exist
-                            if ~isempty(obj.graph.Nodes)
-                                foundNode = findnode(obj.graph, propValue{k}.id);
-                            else
-                                foundNode = 0;
-                            end
-
-                            if foundNode == 0
-                                obj.graph = addnode(obj.graph, propValue{k}.id);
-                                obj.createInstanceListeners(propValue{k});
-                            end
-
-                            % Add an edge to the graph representing the relationship
-                            obj.graph = addedge(obj.graph, thisInstance.id, propValue{k}.id);
+                        instanceArray = propValue;
+                    end
+                    
+                    % Process each linked instance
+                    for k = 1:length(instanceArray)
+                        linkedInstance = instanceArray(k);
+                        
+                        % Add the instance to the collection
+                        obj.add(linkedInstance);
+                        
+                        % Add to graph if not already present
+                        if ~any(strcmp(obj.graph.Nodes.Name, linkedInstance.id))
+                            obj.addInstanceToGraph(linkedInstance);
                         end
                     end
                 end
             end
+            
+            % Now add edges for this instance using the consolidated method
+            obj.addEdgesForInstance(thisInstance);
         end
 
         function initializeEventStates(obj)
@@ -837,17 +949,17 @@ classdef UICollection < openminds.Collection
             obj.notify('InstanceModified', evt)
             fprintf('Linked instance of type %s was changed\n', class(src))
 
-            removeIdx = find( strcmp(obj.graph.Edges.EndNodes(:,1), src.id) );
-
-            obj.graph = rmedge(obj.graph, removeIdx);
-
-            obj.addInstanceProperties(src)
+            % Update the graph for the modified instance
+            obj.updateGraphAfterInstanceModification(src.id);
         end
 
         function onInstanceChanged(obj, src, evt)
 
             obj.notify('InstanceModified', evt)
             fprintf('Instance of type %s was changed\n', class(src))
+            
+            % Update node properties when instance changes (e.g., label)
+            obj.updateGraphAfterInstanceModification(src.id);
         end
     end
 
@@ -870,7 +982,7 @@ classdef UICollection < openminds.Collection
 
             if ~isempty(schemaInstanceList)
                 % Get instance IDs
-                instanceIDs = {schemaInstanceList.id};
+                instanceIDs = [schemaInstanceList.id];
 
                 % Convert instances to a table
                 instanceTable = schemaInstanceList.toTable();
@@ -913,11 +1025,11 @@ classdef UICollection < openminds.Collection
 
             % Add IDs to tables
             if ~isempty(instancesLinkee)
-                tableLinker.id = {instancesLinkee.id}';
+                tableLinker.id = [instancesLinkee.id]'; % todo, check shape
             end
 
             if ~isempty(instancesLinked)
-                tableLinked.id = {instancesLinked.id}';
+                tableLinked.id = [instancesLinked.id]'; % todo, check shape
             end
 
             % Rename lookupLabel columns to avoid conflicts
@@ -1131,6 +1243,10 @@ classdef UICollection < openminds.Collection
             end
             if isempty(S.EventStates)
                 S.initializeEventStates()
+            end
+            % Initialize InstanceListeners for older saved objects
+            if isempty(S.InstanceListeners)
+                S.InstanceListeners = containers.Map('KeyType', 'char', 'ValueType', 'any');
             end
             obj = S;
         end
