@@ -950,22 +950,37 @@ classdef UICollection < openminds.Collection
     methods (Access = private)
 
         function onPropertyWithLinkedInstanceChanged(obj, src, evt)
+            % onPropertyWithLinkedInstanceChanged Called when a linked property changes
+            % This requires full graph edge updates since relationships may have changed
 
             % Todo: collect instance in evtdata
             obj.notify('InstanceModified', evt)
             fprintf('Linked instance of type %s was changed\n', class(src))
 
-            % Update the graph for the modified instance
+            % Full update: edges need to be rebuilt since relationships changed
             obj.updateGraphAfterInstanceModification(src.id);
         end
 
         function onInstanceChanged(obj, src, evt)
+            % onInstanceChanged Called when a non-linked property changes
+            % Only node properties (like labels) need updating, no edge changes required
 
             obj.notify('InstanceModified', evt)
             fprintf('Instance of type %s was changed\n', class(src))
             
-            % Update node properties when instance changes (e.g., label)
-            obj.updateGraphAfterInstanceModification(src.id);
+            % Efficient update: only update node properties, skip edge rebuild
+            if ~isKey(obj.Nodes, src.id)
+                return;
+            end
+            
+            % Get the modified instance
+            instanceCell = obj.Nodes(src.id);
+            instance = instanceCell{1};
+            
+            % Update only node properties (label might have changed)
+            if ~isempty(obj.graph.Nodes) && any(strcmp(obj.graph.Nodes.Name, src.id))
+                obj.updateNodeProperties(src.id, instance);
+            end
         end
     end
 
