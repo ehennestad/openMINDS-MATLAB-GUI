@@ -201,7 +201,11 @@ classdef InteractiveOpenMINDSPlot < handle
             % updateIfDirty Update the graph if it has pending changes
             if obj.IsGraphDirty
                 obj.IsUpdateEnabled = true;  % Temporarily enable updates
-                obj.updateGraph();           % Force a full update
+                if ~isempty(obj.UICollection)
+                    obj.updateGraph(obj.UICollection.graph);
+                else
+                    obj.updateGraph();
+                end
                 obj.IsGraphDirty = false;    % Mark as clean
             end
         end
