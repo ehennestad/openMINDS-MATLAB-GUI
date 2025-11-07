@@ -940,22 +940,16 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         function onDeleteMetadataInstanceClicked(obj, ~, ~)
             selectedIdx = obj.UIMetaTableViewer.getSelectedEntries();
 
-            % Todo: Make sure this is name and not label.
-            type = obj.CurrentSchemaTableName;
-
-            % Todo: Support removing multiple instances.
+            % Remove instances one by one
             instanceID = obj.CurrentTableInstanceIds(selectedIdx);
             for i = 1:numel(instanceID)
                 obj.MetadataCollection.remove(instanceID{i})
             end
-
-            % obj.MetadataCollection.removeInstance(type, selectedIdx)
+            % Todo: Support removing multiple instances in batch.
 
             [T, ids] = obj.MetadataCollection.getTable(obj.CurrentSchemaTableName);
             obj.updateUITable(T)
             obj.CurrentTableInstanceIds = ids;
-            % app.MetaTable.removeEntries(selectedEntries)
-            % app.UiMetaTableViewer.refreshTable(app.MetaTable)
         end
 
         function onExportToWorkspaceClicked(obj, ~, ~)
