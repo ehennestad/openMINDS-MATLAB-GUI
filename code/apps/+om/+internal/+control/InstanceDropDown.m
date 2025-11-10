@@ -766,7 +766,9 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
         function styleDropDownItems(comp)
             if ~isMATLABReleaseOlderThan("R2023a")
                 removeStyle(comp.DropDown) % Remove old styles if any
-                s1 = uistyle("FontAngle", "italic", "FontColor", [0.15,0.15,0.15]);
+                
+                %Todo: Light/dark sensitive
+                s1 = uistyle("FontAngle", "italic"); % "FontColor", [0.15,0.15,0.15] % Light
 
                 for i = 1:numel(comp.Actions)
                     addStyle(comp.DropDown, s1, "item", i);
