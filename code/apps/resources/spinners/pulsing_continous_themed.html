@@ -8,13 +8,20 @@
         /* Theme awareness */
         :root {
             color-scheme: light dark;      /* Hint the browser we support both */
-            --page-bg: #ffffff;            /* Light background */
+            --page-bg: transparent;            /* Light background */
             --logo-stroke: #000000;        /* Light-mode stroke color */
+        }
+        html, body {
+          background-color: rgba(0, 0, 0, 0) !important;
+          background: none !important;
+          margin: 0;
+          padding: 0;
+          color-scheme: light dark; /* avoid forced white backgrounds */
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --page-bg: #212121;        /* Dark background */
+                --page-bg: transparent;        /* Dark background */
                 --logo-stroke: #ffffff;    /* Dark-mode stroke color */
             }
         }
