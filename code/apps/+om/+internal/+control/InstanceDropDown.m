@@ -113,6 +113,8 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
         SearchString = ''
 
         Actions (1,:) string
+
+        ThemeChangedListener event.listener % Listener for theme changed event
     end
 
     % Constructor
@@ -444,11 +446,9 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                     return
 
                 case 'InstanceEditorButton'
-                    iconFilePath = om.internal.getIconPath('form');
                     callbackFcn = @comp.onEditInstanceButtonPushed;
 
                 case 'TypeSelectionButton'
-                    iconFilePath = om.internal.getIconPath('options');
                     callbackFcn = @comp.onChangeTypeButtonPushed;
                     comp.initializeTypeSelectionContextMenu()
 
@@ -462,8 +462,8 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                 comp.ActionButton.Text = "";
             end
 
-            comp.ActionButton.Icon = iconFilePath;
             comp.ActionButton.ButtonPushedFcn = callbackFcn;
+            comp.setButtonIcon()
         end
     end
 
@@ -497,6 +497,9 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
             % Activate InheritableBackgroundColor functionality
             comp.addBackgroundColorLinkTargets(comp.GridLayout)
             comp.activateBackgroundColorInheritance()
+                       
+            % Execute the startup function
+            postSetupFcn(comp)
         end
     end
 
@@ -633,6 +636,29 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
 
         function onTypeSelectionContectMenuClicked(comp, ~, evt)
             comp.ActiveMetadataType = evt.SelectedType;
+        end
+    
+        function onThemeChanged(comp, ~, evt)
+            comp.doUpdateTheme(evt.Theme.BaseColorStyle)
+        end
+
+        function doUpdateTheme(comp, baseColorStyle)
+            comp.setButtonIcon(baseColorStyle)
+        end
+        
+        % Code that executes after component creation
+        function postSetupFcn(comp)
+            try
+                comp.ThemeChangedListener = addlistener(comp, ...
+                    'ThemeChanged', @comp.onThemeChanged);
+            catch
+                % pass
+            end
+
+            hFigure = ancestor(comp, 'figure');
+            if isprop(hFigure, 'Theme') && ~isempty(hFigure.Theme)
+                comp.doUpdateTheme(hFigure.Theme.BaseColorStyle)
+            end
         end
     end
 
@@ -796,6 +822,42 @@ classdef InstanceDropDown < matlab.ui.componentcontainer.ComponentContainer ...
                 "Indeterminate", "on", ...
                 "Message", messageStr );
         end
+    
+        function setButtonIcon(comp, baseColorStyle)
+
+            if nargin < 2
+                baseColorStyle = comp.getBaseColorStyle();
+            end
+
+            switch char(comp.ActionButtonType)
+                case 'InstanceEditorButton'
+                    iconName = 'form';
+
+                case 'TypeSelectionButton'
+                    iconName = 'options';
+
+                otherwise
+                    iconName = '';
+            end
+
+            if ~isempty(iconName)
+                if strcmp(baseColorStyle, 'dark')
+                    iconName = sprintf('%s_dark', iconName);
+                end
+                iconFilePath = om.internal.getIconPath(iconName);
+                comp.ActionButton.Icon = iconFilePath;
+            end
+        end
+    
+        function baseColorStyle = getBaseColorStyle(comp)
+            hFigure = ancestor(comp, 'figure');
+            if isprop(hFigure, 'Theme') && ~isempty(hFigure.Theme)
+                baseColorStyle = hFigure.Theme.BaseColorStyle;
+            else
+                baseColorStyle = 'light';
+            end
+        end
+    
     end
 
     % Component methods (non-graphical)
