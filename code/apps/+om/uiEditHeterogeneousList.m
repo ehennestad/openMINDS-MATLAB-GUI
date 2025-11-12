@@ -82,7 +82,7 @@ function [itemNames, itemData] = uiEditHeterogeneousList(metadataInstances, type
     end
 
     uim.utility.centerFigureOnScreen(editor.UIFigure)
-
+    editor.UIFigure.WindowStyle = 'alwaysontop';
     uiwait(editor, true)
 
     if ~isvalid(editor) || editor.FinishState ~= "Finished"

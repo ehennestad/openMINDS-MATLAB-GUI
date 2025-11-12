@@ -33,7 +33,9 @@ function [tf, versionString, toolboxFolder] = isToolboxInstalled(toolboxIdentifi
         end
 
         tf = true;
-        toolboxFolder = retrieveInstallationFolderForAddOn(toolboxIdentifier, versionString);
+        if nargout >= 3
+            toolboxFolder = retrieveInstallationFolderForAddOn(toolboxIdentifier, versionString);
+        end
     end
 
     if nargout < 2

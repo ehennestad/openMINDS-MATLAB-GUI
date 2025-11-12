@@ -31,6 +31,7 @@ function [itemNames, itemData] = uiEditHomogeneousList(metadataInstances, typeUR
     end
 
     uim.utility.centerFigure(editor.UIFigure)
+    editor.UIFigure.WindowStyle = 'alwaysontop';
     uiwait(editor, true)
 
     if ~isvalid(editor) || editor.FinishState ~= "Finished"
