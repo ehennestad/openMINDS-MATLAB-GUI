@@ -1027,7 +1027,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 
                 if ~isempty(editedInstance)
                     
-                    % Update node links. (Mis)Using add, should add method for
+                    % Update node links. Misusing add, should add method for
                     % updating node links directly (TODO)
                     obj.MetadataCollection.add(editedInstance, ...
                         'AddSubNodesOnly', true, ...

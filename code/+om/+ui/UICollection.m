@@ -957,7 +957,7 @@ classdef UICollection < openminds.Collection
             obj.notify('InstanceModified', evt)
             fprintf('Linked instance of type %s was changed\n', class(src))
             
-            % Update node links. (Mis)Using addNode, should add method for
+            % Update node links. Misusing addNode, should add method for
             % updating node links directly (TODO)
             obj.addNode(evt.IsPropertyOf, ...
                 'AddSubNodesOnly', true, ...
