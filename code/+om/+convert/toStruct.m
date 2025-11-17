@@ -26,6 +26,18 @@ function structInstance = toStruct(openMindsInstance, metadataCollection)
 
     % Order fields according to settings/preferences
     propertyOrder = om.internal.config.getPreferredPropertyOrder( openMindsType );
+
+    structFields = fieldnames(structInstance);
+
+    % Any missing?
+    missingFieldsPropOrder = setdiff(structFields, propertyOrder);
+    missingFieldsStruct = setdiff(propertyOrder, structFields);
+
+    propertyOrder = setdiff(propertyOrder, missingFieldsStruct, 'stable');
+    propertyOrder = cat(1, propertyOrder, missingFieldsPropOrder);
+
+    propertyOrder = intersect(propertyOrder, structFields, 'stable');
+
     structInstance = orderfields(structInstance, propertyOrder);
 
     metaSchema = openminds.internal.meta.Type( openMindsInstance );
