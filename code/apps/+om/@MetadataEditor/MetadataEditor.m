@@ -46,6 +46,8 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         UIGraphViewer
         UIButtonCreateNew
         UINoInstancesText  % Text component for "no instances available" message
+        UITypeSearchList om.internal.dialog.SearchableList
+        DialogOverlayImage matlab.ui.control.Image
     end
 
     properties (Access = private)
@@ -98,6 +100,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.createCreateNewButton()
             typeSelections = obj.loadTypeQuickSelection();
             obj.createTypeSelectorSidebar(typeSelections)
+            obj.createTypeSearchListDialog()
             obj.plotOpenMindsLogo()
 
             dlg.Message = 'Creating graph viewer...';
@@ -160,7 +163,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.saveMetatableColumnSettings()
             obj.saveTypeQuickSelection()
 
-%             if isempty(app.MetaTable)
+%             if isempty(obj.MetaTable)
 %                 return
 %             end
 
@@ -366,11 +369,14 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 obj.Figure = figure('Position', windowPosition);
             else
                 obj.Figure = uifigure('Position', windowPosition);
+                obj.Figure.AutoResizeChildren = false;
             end
+
             obj.Figure.Name = 'openMINDS';
             obj.Figure.NumberTitle = 'off';
             obj.Figure.MenuBar = 'none';
             obj.Figure.ToolBar = 'none';
+            obj.Figure.KeyPressFcn = @obj.onFigureKeyPress;
                         
             if isprop(obj.Figure, 'Theme') && ~isempty(obj.Figure.Theme)
                 obj.Figure.ThemeChangedFcn = @obj.updateTheme;
@@ -522,6 +528,40 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.UISideBar = sideBar;
         end
 
+        function createTypeSearchListDialog(obj)
+
+            baseColorStyle = obj.getBaseColorStyle();
+
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
+            imgFile = fullfile(pathToMLAPP, ...
+                sprintf('transparent_%s.png', baseColorStyle));
+
+            obj.DialogOverlayImage = uiimage(obj.Figure);
+            obj.DialogOverlayImage.ScaleMethod = 'stretch';
+            obj.DialogOverlayImage.Position = [-50 -50 obj.Figure.Position(3:4)+100];
+            obj.DialogOverlayImage.ImageSource = imgFile;
+            obj.DialogOverlayImage.Visible = "off";
+
+            [~, typenames] = enumeration('openminds.enum.Types');
+            obj.UITypeSearchList = om.internal.dialog.SearchableList(obj.Figure);
+            obj.UITypeSearchList.Items = sort(typenames);
+            obj.UITypeSearchList.Visible = 'off';
+            obj.UITypeSearchList.Position = [1,1,300,200];
+            obj.UITypeSearchList.Placeholder = "Select a metadata type...";
+            obj.UITypeSearchList.ValueChangedFcn = @obj.onTypeSelectorDialogValueChanged;
+
+            obj.updateTypeSelectorDialogPosition()
+        end
+
+        function updateTypeSelectorDialogPosition(obj)
+            position = obj.Figure.Position;
+            obj.DialogOverlayImage.Position(3:4) = position(3:4)+100;
+
+            dlgPos = obj.UITypeSearchList.Position;
+            obj.UITypeSearchList.Position(1:2) = position(3:4)/2 - dlgPos(3:4)/2;
+        end
+
         function initializeTableViewer(obj)
 
             columnSettings = obj.loadMetatableColumnSettings();
@@ -639,6 +679,16 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             hImage.AlphaData = A;
         end
 
+        function updateDialogOverlayImage(obj)
+            baseColorStyle = obj.getBaseColorStyle();
+
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
+            imgFile = fullfile(pathToMLAPP, ...
+                sprintf('transparent_%s.png', baseColorStyle));
+            obj.DialogOverlayImage.ImageSource = imgFile;
+        end
+
         function updateThemeForNoInstancesText(obj)
             baseColorStyle = obj.getBaseColorStyle();
             
@@ -670,10 +720,11 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             % hJ(2).KeyReleasedCallback = @obj.onKeyReleased;
         end
     
-        function updateTheme(obj, src, evt)
+        function updateTheme(obj, ~, ~)
             obj.updateBackgroundColorForPanels()
             obj.updateOpenMindsLogo()
             obj.updateThemeForNoInstancesText()
+            obj.updateDialogOverlayImage()
         end
     
         function baseColorStyle = getBaseColorStyle(obj)
@@ -682,6 +733,28 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             else
                 baseColorStyle = "light";
             end
+        end
+    
+        function showTypeSearchDialog(obj)
+            obj.UITypeSearchList.Visible = 'on';
+            obj.DialogOverlayImage.Visible = 'on';
+            drawnow()
+            obj.UITypeSearchList.focus();   
+            uiwait(obj.Figure)
+            drawnow()
+            obj.UITypeSearchList.reset()
+            obj.UITypeSearchList.Visible = 'off';
+            obj.DialogOverlayImage.Visible = 'off';
+            focus(obj.Figure)
+        end
+
+        function hideTypeSearchDialog(obj)
+            uiresume(obj.Figure)
+            drawnow()
+            obj.UITypeSearchList.reset()
+            obj.UITypeSearchList.Visible = 'off';
+            obj.DialogOverlayImage.Visible = 'off';
+            focus(obj.Figure)
         end
     end
 
@@ -788,6 +861,11 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             drawnow
         end
 
+        function onTypeSelectorDialogValueChanged(obj, ~, evt)
+
+            disp(evt.Value)
+        end
+
         function onTabSelectionChanged(obj, ~, evt)
             % onTabSelectionChanged Handle tab selection changes for performance optimization
             %
@@ -813,11 +891,25 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             end
         end
 
-        function onFigureSizeChanged(app)
-            app.updateLayoutPositions()
+        function onFigureSizeChanged(obj)
+            obj.updateLayoutPositions()
             % Update the sidebar listbox layout to match new panel size
-            if ~isempty(app.UISideBar) && isvalid(app.UISideBar)
-                app.UISideBar.updateLayout()
+            if ~isempty(obj.UISideBar) && isvalid(obj.UISideBar)
+                obj.UISideBar.updateLayout()
+            end
+
+            obj.updateTypeSelectorDialogPosition()
+        end
+
+        function onFigureKeyPress(obj, ~, event)
+            key = event.Key;
+            switch key
+                case 'space'
+                    if obj.UITypeSearchList.Visible == "on"
+                        obj.hideTypeSearchDialog()
+                    else
+                        obj.showTypeSearchDialog()
+                    end
             end
         end
 
