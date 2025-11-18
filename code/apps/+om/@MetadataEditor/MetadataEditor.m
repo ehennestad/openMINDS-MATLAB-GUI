@@ -46,16 +46,20 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
         UIGraphViewer
         UIButtonCreateNew
         UINoInstancesText  % Text component for "no instances available" message
+        UITypeSearchList om.internal.dialog.SearchableList
+        DialogOverlayImage matlab.ui.control.Image
     end
 
     properties (Access = private)
         SchemaMenu
         RecentCollectionsMenu  % Menu handle for recent collections submenu
+        MenuSelectionModeItems  % Array of menu items for mode selection
     end
 
     properties (Access = private)
         CurrentTableInstanceIds
         HasUnsavedChanges logical = false  % Flag to track unsaved changes
+        CurrentCreationMode char = 'View'  % Current mode: 'View', 'Single', or 'Multiple'
     end
 
     properties (Access = private, Dependent)
@@ -98,6 +102,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.createCreateNewButton()
             typeSelections = obj.loadTypeQuickSelection();
             obj.createTypeSelectorSidebar(typeSelections)
+            obj.createTypeSearchListDialog()
             obj.plotOpenMindsLogo()
 
             dlg.Message = 'Creating graph viewer...';
@@ -160,7 +165,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.saveMetatableColumnSettings()
             obj.saveTypeQuickSelection()
 
-%             if isempty(app.MetaTable)
+%             if isempty(obj.MetaTable)
 %                 return
 %             end
 
@@ -348,6 +353,48 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             [metaTable, ~] = obj.MetadataCollection.getTable(schemaType);
             obj.updateUITable(metaTable)
         end
+
+        function numInstances = promptForNumInstances(obj)
+            %promptForNumInstances Prompt user for number of instances to create
+            %   Returns the number of instances, or empty if user cancels
+            
+            answer = inputdlg('How many instances would you like to create?', ...
+                'Create Multiple Instances', 1, {'5'});
+            
+            if isempty(answer)
+                numInstances = []; % User cancelled
+                return;
+            end
+            
+            numInstances = str2double(answer{1});
+            if isnan(numInstances) || numInstances < 1
+                obj.uialert('Please enter a valid positive number', 'Invalid Input');
+                numInstances = [];
+            end
+        end
+
+        function createInstancesOfType(obj, typeName, numInstances)
+            %createInstancesOfType Create instances of a specified type
+            %   Handles progress dialog creation and instance creation
+            
+            % Create progress dialog
+            if ~obj.requiresCompatibilityMode
+                [dlg, dlgCleanup] = obj.uiprogressdlg(...
+                    "Opening metadata form...", ...
+                    "Indeterminate", "on"); %#ok<ASGLU>
+            else
+                dlg = [];
+            end
+            
+            % Create instances
+            om.uiCreateNewInstance(typeName, obj.MetadataCollection, ...
+                "NumInstances", numInstances, ...
+                "ProgressMonitor", dlg);
+            
+            if ~isempty(dlg)
+                dlg.Message = "Updating metadata collection...";
+            end
+        end
     end
 
     methods (Access = private) % App initialization and update methods
@@ -366,11 +413,14 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                 obj.Figure = figure('Position', windowPosition);
             else
                 obj.Figure = uifigure('Position', windowPosition);
+                obj.Figure.AutoResizeChildren = false;
             end
+
             obj.Figure.Name = 'openMINDS';
             obj.Figure.NumberTitle = 'off';
             obj.Figure.MenuBar = 'none';
             obj.Figure.ToolBar = 'none';
+            obj.Figure.KeyPressFcn = @obj.onFigureKeyPress;
                         
             if isprop(obj.Figure, 'Theme') && ~isempty(obj.Figure.Theme)
                 obj.Figure.ThemeChangedFcn = @obj.updateTheme;
@@ -468,12 +518,14 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             mItem = uimenu(m, 'Text', 'MenuSelectionMode', 'Separator', 'on');
             modeOptions = ["View Instances", "Create Single Instance", "Create Multiple Instances"];
             accelerators = ["v", "i", "m"];
+            obj.MenuSelectionModeItems = gobjects(numel(modeOptions), 1);
             for i = 1:numel(modeOptions)
                 mSubItem = uimenu(mItem, "Text", modeOptions(i), "Accelerator", accelerators(i));
                 mSubItem.Callback = @obj.onMenuModeChanged;
                 if i == 1
                     mSubItem.Checked = 'on';
                 end
+                obj.MenuSelectionModeItems(i) = mSubItem;
             end
 
             % Create a separator
@@ -520,6 +572,40 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             end
             sideBar.SelectionChangedFcn = @obj.onTypeSelectionChanged;
             obj.UISideBar = sideBar;
+        end
+
+        function createTypeSearchListDialog(obj)
+
+            baseColorStyle = obj.getBaseColorStyle();
+
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
+            imgFile = fullfile(pathToMLAPP, ...
+                sprintf('transparent_%s.png', baseColorStyle));
+
+            obj.DialogOverlayImage = uiimage(obj.Figure);
+            obj.DialogOverlayImage.ScaleMethod = 'stretch';
+            obj.DialogOverlayImage.Position = [-50 -50 obj.Figure.Position(3:4)+100];
+            obj.DialogOverlayImage.ImageSource = imgFile;
+            obj.DialogOverlayImage.Visible = "off";
+
+            [~, typenames] = enumeration('openminds.enum.Types');
+            obj.UITypeSearchList = om.internal.dialog.SearchableList(obj.Figure);
+            obj.UITypeSearchList.Items = sort(typenames);
+            obj.UITypeSearchList.Visible = 'off';
+            obj.UITypeSearchList.Position = [1,1,300,200];
+            obj.UITypeSearchList.Placeholder = "Select a metadata type...";
+            obj.UITypeSearchList.ValueChangedFcn = @obj.onTypeSelectorDialogValueChanged;
+
+            obj.updateTypeSelectorDialogPosition()
+        end
+
+        function updateTypeSelectorDialogPosition(obj)
+            position = obj.Figure.Position;
+            obj.DialogOverlayImage.Position(3:4) = position(3:4)+100;
+
+            dlgPos = obj.UITypeSearchList.Position;
+            obj.UITypeSearchList.Position(1:2) = position(3:4)/2 - dlgPos(3:4)/2;
         end
 
         function initializeTableViewer(obj)
@@ -639,6 +725,16 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             hImage.AlphaData = A;
         end
 
+        function updateDialogOverlayImage(obj)
+            baseColorStyle = obj.getBaseColorStyle();
+
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
+            imgFile = fullfile(pathToMLAPP, ...
+                sprintf('transparent_%s.png', baseColorStyle));
+            obj.DialogOverlayImage.ImageSource = imgFile;
+        end
+
         function updateThemeForNoInstancesText(obj)
             baseColorStyle = obj.getBaseColorStyle();
             
@@ -670,10 +766,11 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             % hJ(2).KeyReleasedCallback = @obj.onKeyReleased;
         end
     
-        function updateTheme(obj, src, evt)
+        function updateTheme(obj, ~, ~)
             obj.updateBackgroundColorForPanels()
             obj.updateOpenMindsLogo()
             obj.updateThemeForNoInstancesText()
+            obj.updateDialogOverlayImage()
         end
     
         function baseColorStyle = getBaseColorStyle(obj)
@@ -682,6 +779,28 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             else
                 baseColorStyle = "light";
             end
+        end
+    
+        function showTypeSearchDialog(obj)
+            obj.UITypeSearchList.Visible = 'on';
+            obj.DialogOverlayImage.Visible = 'on';
+            drawnow()
+            obj.UITypeSearchList.focus();   
+            uiwait(obj.Figure)
+            drawnow()
+            obj.UITypeSearchList.reset()
+            obj.UITypeSearchList.Visible = 'off';
+            obj.DialogOverlayImage.Visible = 'off';
+            focus(obj.Figure)
+        end
+
+        function hideTypeSearchDialog(obj)
+            uiresume(obj.Figure)
+            drawnow()
+            obj.UITypeSearchList.reset()
+            obj.UITypeSearchList.Visible = 'off';
+            obj.DialogOverlayImage.Visible = 'off';
+            focus(obj.Figure)
         end
     end
 
@@ -776,7 +895,7 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.CurrentSchemaTableName = selectedTypes;
 
             % check if schema has a table
-            if numel(selectedTypes) == 1
+            if isscalar(selectedTypes)
                 schemaType = openminds.internal.vocab.getSchemaName(selectedTypes{1});
                 [metaTable, ids] = obj.MetadataCollection.getTable(schemaType);
                 obj.CurrentTableInstanceIds = ids;
@@ -786,6 +905,55 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             obj.UIMetaTableViewer.MetaTableType = string(schemaType);
             obj.updateUITable(metaTable)
             drawnow
+        end
+
+        function onTypeSelectorDialogValueChanged(obj, ~, evt)
+            % onTypeSelectorDialogValueChanged Handle selection from type search dialog
+            %
+            % This method handles type selection based on the current menu mode:
+            % - View: Changes sidebar selection to show instances of the type
+            % - Single: Creates a single new instance of the selected type
+            % - Multiple: Prompts for number and creates multiple instances
+            
+            selectedType = evt.Value;
+            
+            if isempty(selectedType)
+                return;
+            end
+            
+            % Hide the dialog
+            obj.hideTypeSearchDialog();
+            
+            switch obj.CurrentCreationMode
+                case 'View'
+                    % View mode - change selection in sidebar to show instances
+                    obj.changeSelection(selectedType);
+                    return;
+                    
+                case 'Single'
+                    % Create single instance
+                    numInstances = 1;
+                    
+                case 'Multiple'
+                    % Create multiple instances - prompt for number
+                    numInstances = obj.promptForNumInstances();
+                    if isempty(numInstances)
+                        return; % User cancelled or invalid input
+                    end
+                    
+                otherwise
+                    % Default to view mode
+                    obj.changeSelection(selectedType);
+                    return;
+            end
+            
+            % Create instance(s)
+            type = openminds.internal.vocab.getSchemaName(selectedType);
+            typeEnum = eval(sprintf('openminds.enum.Types.%s', type));
+            obj.createInstancesOfType(typeEnum.ClassName, numInstances);
+            
+            % Update selection to show newly created instances
+            obj.changeSelection(char(selectedType)); % Downstream functions expect char
         end
 
         function onTabSelectionChanged(obj, ~, evt)
@@ -813,11 +981,34 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
             end
         end
 
-        function onFigureSizeChanged(app)
-            app.updateLayoutPositions()
+        function onFigureSizeChanged(obj)
+            obj.updateLayoutPositions()
             % Update the sidebar listbox layout to match new panel size
-            if ~isempty(app.UISideBar) && isvalid(app.UISideBar)
-                app.UISideBar.updateLayout()
+            if ~isempty(obj.UISideBar) && isvalid(obj.UISideBar)
+                obj.UISideBar.updateLayout()
+            end
+
+            obj.updateTypeSelectorDialogPosition()
+        end
+
+        function onFigureKeyPress(obj, ~, event)
+            key = event.Key;
+            switch key
+                case 'space'
+                    if obj.UITypeSearchList.Visible == "on"
+                        obj.hideTypeSearchDialog()
+                    else
+                        obj.showTypeSearchDialog()
+                    end
+                case 'v'
+                    % View Instances mode
+                    obj.onMenuModeChanged(obj.MenuSelectionModeItems(1), []);
+                case 'i'
+                    % Create Single Instance mode
+                    obj.onMenuModeChanged(obj.MenuSelectionModeItems(2), []);
+                case 'm'
+                    % Create Multiple Instances mode
+                    obj.onMenuModeChanged(obj.MenuSelectionModeItems(3), []);
             end
         end
 
@@ -861,8 +1052,12 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
                     obj.SchemaMenu.Mode = "View";
                 case "Create Single Instance"
                     obj.SchemaMenu.Mode = "Single";
+                    obj.CurrentCreationMode = 'Single';
+                    obj.UIButtonCreateNew.String = "Create New";
                 case "Create Multiple Instances"
                     obj.SchemaMenu.Mode = "Multiple";
+                    obj.CurrentCreationMode = 'Multiple';
+                    obj.UIButtonCreateNew.String = "Create Multiple";
             end
         end
 
@@ -878,70 +1073,70 @@ classdef MetadataEditor < handle & om.app.mixin.HasDialogs
 
             switch selectionMode
                 case 'Single'
-                    n = 1;
+                    numInstances = 1;
+                    
                 case 'Multiple'
-                    n = inputdlg('Enter number of items to create:');
-                    if n{1}==0; return; end
-                    n = str2double(n{1});
+                    answer = inputdlg('Enter number of items to create:');
+                    if isempty(answer) || str2double(answer{1}) == 0
+                        return;
+                    end
+                    numInstances = str2double(answer{1});
+                    
                 case 'Help'
                     help(functionName)
                     return
+                    
                 case 'Open'
                     open(functionName)
+                    return
+                    
                 case 'View'
                     schemaType = functionNameSplit{end};
-                    % obj.UISideBar.Items = schemaType;
                     obj.changeSelection(schemaType)
                     return
             end
 
-            if ~obj.requiresCompatibilityMode
-                [dlg, dlgCleanup] = obj.uiprogressdlg(...
-                    "Opening metadata form...", ...
-                    "Indeterminate", "on"); %#ok<ASGLU>
-            else
-                dlg = [];
-            end
-
+            % Disable collection changed event temporarily
             obj.MetadataCollection.disableEvent('CollectionChanged')
-            om.uiCreateNewInstance(functionName, obj.MetadataCollection, ...
-                "NumInstances", n, ...
-                "ProgressMonitor", dlg);
-
-            if ~isempty(dlg)
-                dlg.Message = "Updating metadata table...";
-            end
-
+            
+            % Create instances
+            obj.createInstancesOfType(functionName, numInstances);
+            
+            % Re-enable collection changed event and notify
             obj.MetadataCollection.enableEvent('CollectionChanged')
             obj.MetadataCollection.notify('CollectionChanged', event.EventData)
 
+            % Update selection to show newly created instances
             className = functionNameSplit{end};
             obj.changeSelection(className)
 
             % Todo: update tables...!
         end
 
-        function onCreateNewButtonPressed(obj, ~, ~)
+        function onCreateNewButtonPressed(obj, src, ~)
 
             selectedItems = obj.UISideBar.SelectedItems{1};
             type = openminds.internal.vocab.getSchemaName(selectedItems);
 
-            if ~obj.requiresCompatibilityMode
-                [dlg, dlgCleanup] = obj.uiprogressdlg(...
-                    "Opening metadata form...", ...
-                    "Indeterminate", "on"); %#ok<ASGLU>
-            else
-                dlg = [];
+            switch src.String
+                    
+                case 'Create New'
+                    % Create single instance
+                    numInstances = 1;
+                    
+                case 'Create Multiple'
+                    % Create multiple instances - prompt for number
+                    numInstances = obj.promptForNumInstances();
+                    if isempty(numInstances)
+                        return; % User cancelled or invalid input
+                    end
+                    
+                otherwise
+                    numInstances = 1;
             end
 
-            type = eval( sprintf( 'openminds.enum.Types.%s', type) );
-            om.uiCreateNewInstance(type.ClassName, obj.MetadataCollection, ...
-                "NumInstances", 1, ...
-                "ProgressMonitor", dlg); % Suppress output
-
-            if ~isempty(dlg)
-                dlg.Message = "Updating metadata collection...";
-            end
+            typeEnum = eval(sprintf('openminds.enum.Types.%s', type));
+            obj.createInstancesOfType(typeEnum.ClassName, numInstances);
 
             % Todo: update tables...!
             % obj.changeSelection(string(type))

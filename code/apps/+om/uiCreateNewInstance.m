@@ -63,7 +63,7 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     [className, classNameLabel] = deal( extractAfter(className, ".") );
 
     % Todo: Improve pluralisation or skip altogether
-    if options.NumInstances > 1; classNameLabel = [className, 's']; end
+    if options.NumInstances > 1; classNameLabel = strcat(className, 's'); end
 
     if mode == "create"
         titleStr = sprintf('Create New %s', classNameLabel);
