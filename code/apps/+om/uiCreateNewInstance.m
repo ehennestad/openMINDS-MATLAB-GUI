@@ -20,7 +20,7 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
         options.UpstreamInstanceType (1,1) string = missing
         options.UpstreamInstancePropertyName (1,1) string = missing
         options.NumInstances = 1
-        options.Mode (1,1) string {mustBeMember(options.Mode, ["create", "modify"])} = "create"
+        options.Mode (1,1) string {mustBeMember(options.Mode, ["auto", "create", "modify"])} = "auto"
         options.ProgressMonitor = []
     end
 
@@ -30,20 +30,22 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     % Reset form cache during dev
     % formCache = dictionary(); % Todo: Remove
 
+    mode = resolveMode(instanceSpec, options);
+
     instanceName = string.empty;
 
-    if isa(instanceSpec, 'char') || isa(instanceSpec, 'string')
-        mode = "create";
-        typeClassFcn = str2func(instanceSpec);
-        metadataInstance = arrayfun(@(i) typeClassFcn(), 1:options.NumInstances);
-    else
-        mode = "modify";
-        if iscell(instanceSpec)
-            metadataInstance = [instanceSpec{:}];
-        else
-            metadataInstance = instanceSpec;
-        end
-        instanceSpec = class(metadataInstance);
+    switch mode
+        case "create"
+            typeClassFcn = str2func(instanceSpec);
+            metadataInstance = arrayfun(@(i) typeClassFcn(), 1:options.NumInstances);
+
+        case "modify"
+            if iscell(instanceSpec)
+                metadataInstance = [instanceSpec{:}];
+            else
+                metadataInstance = instanceSpec;
+            end
+            instanceSpec = class(metadataInstance);
     end
 
     if isempty(metadataInstance)
@@ -65,8 +67,10 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
 
     if mode == "create"
         titleStr = sprintf('Create New %s', classNameLabel);
+        okButtonName = "Create";
     elseif mode == "modify"
         titleStr = sprintf('Edit %s', classNameLabel);
+        okButtonName = "Save";
     end
 
     % titleStr = om.internal.text.getEditorTitle(...
@@ -75,32 +79,14 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     %     "UpstreamInstancePropertyName", options.UpstreamInstancePropertyName, ...
     %     "Mode", "create");
 
-    promptStr = sprintf('Fill out properties for %s', classNameLabel);
-    % [SNew, wasAborted] = tools.editStruct(SNew, [], titleStr, 'Prompt', promptStr, 'Theme', 'light');
-
+    % Open the form dialog window
     if isConfigured(formCache) && isKey(formCache, className) && hasFigure(formCache(className))
+        % Use cached form dialog window
         hEditor = formCache(className);
         hEditor.show();
         hEditor.Data = SNew;
 
-        if ~isempty(options.ProgressMonitor)
-            options.ProgressMonitor.Message = "Waiting for user input...";
-        end
-
-        if mode == "create"
-            hEditor.OkButtonText = 'Create';
-        elseif mode == "modify"
-            hEditor.OkButtonText = 'Save';
-        end
-
-        uiwait(hEditor, true)
-
-        wasAborted = hEditor.FinishState ~= "Finished";
-        SNew = hEditor.Data;
-        hEditor.hide();
-        hEditor.reset()
     else
-
         % Todo: Consider passing instances directly...
         % hEditor = structeditor.StructEditorApp(metadataInstance, "Title", titleStr, 'LoadingHtmlSource', om.internal.getSpinnerSource());
 
@@ -109,24 +95,24 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
             'LoadingHtmlSource', om.internal.getSpinnerSource('pulsing_continous_themed'), ...
             'EnableNestedStruct', 'off' );
 
-        if options.Mode == "create"
-            hEditor.OkButtonText = 'Create';
-        elseif options.Mode == "modify"
-            hEditor.OkButtonText = 'Save';
-        end
-
-        if ~isempty(options.ProgressMonitor)
-            options.ProgressMonitor.Message = "Waiting for user input...";
-        end
-
-        uiwait(hEditor, true)
-
-        wasAborted = hEditor.FinishState ~= "Finished";
-        SNew = hEditor.Data;
-        hEditor.hide();
-        hEditor.reset()
+        % Add to cache
         formCache(className) = hEditor;
     end
+        
+    hEditor.OkButtonText = okButtonName;
+
+    % Update progress monitor message
+    if ~isempty(options.ProgressMonitor)
+        options.ProgressMonitor.Message = "Waiting for user input...";
+    end
+    
+    uiwait(hEditor, true)
+
+    % Handle user input (or cancle if user canceled)
+    wasAborted = hEditor.FinishState ~= "Finished";
+    SNew = hEditor.Data;
+    hEditor.hide();
+    hEditor.reset()
 
     if wasAborted
         metadataInstance = [];
@@ -165,4 +151,16 @@ end
 
 function tf = isSchemaInstanceUnavailable(value)
     tf = ~isempty(regexp(char(value), 'No \w* available', 'once'));
+end
+
+function mode = resolveMode(instanceSpec, options)
+    if options.Mode == "auto"
+        if isa(instanceSpec, 'char') || isa(instanceSpec, 'string')
+            mode = "create";
+        else
+            mode = "modify";
+        end
+    else
+        mode = options.Mode;
+    end
 end
