@@ -47,7 +47,7 @@ MATLAB 2023a or later
 ## Installation
 1. Clone or download this repository
 2. Navigate to the repository folder in MATLAB
-3. Run `setup.m`
+3. Run `omg_install.m`
 
 ## Getting started
 This is a very minimal example on how to try out this toolbox. More examples and interactive workflows will be added later.
