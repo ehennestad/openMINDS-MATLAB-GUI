@@ -108,7 +108,7 @@ function [metadataInstance, instanceName] = uiCreateNewInstance(instanceSpec, me
     
     uiwait(hEditor, true)
 
-    % Handle user input (or cancle if user canceled)
+    % Handle user input (or cancel if user canceled)
     wasAborted = hEditor.FinishState ~= "Finished";
     SNew = hEditor.Data;
     hEditor.hide();
